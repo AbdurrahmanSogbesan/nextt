@@ -38,39 +38,6 @@ enum TURN_STATUS_CHOICE {
   DONE
 }
 
-model User {
-  id                Int                @id @default(autoincrement())
-  uuid              String             @unique @default(uuid())
-  createdAt         DateTime           @default(now()) @db.Timestamptz(3)
-  updatedAt         DateTime           @updatedAt @db.Timestamptz(3)
-  firstName         String             @default("")
-  lastName          String             @default("")
-  email             String             @unique
-  clerkUid          String             @unique
-  phone             String             @default("") @db.VarChar(50)
-  dob               DateTime?
-  avatar            String?            @db.VarChar(400)
-  nickname          String             @default("")
-  createdHubs       Hub[]
-  createdRosters    Roster[]           @relation("CreatedBy")
-  currentIn         Roster[]           @relation("CurrentTurn")
-  nextIn            Roster[]           @relation("NextTurn")
-  rosterMemberships RosterMembership[]
-  hubMemberships    HubMembership[]
-  activities        Activity[]
-  comments          Comment[]
-  notifications     Notification[]
-  invites           Invite[]           @relation("InviteRecipient")
-  invitesSent       Invite[]           @relation("InviteSender")
-  isDeleted         Boolean            @default(false)
-  // enablePersonalInformationEmail Boolean            @default(true)
-  // enableRosterEmail              Boolean            @default(true)
-  // enableHubEmail                 Boolean            @default(true)
-  // enableNewFeatureEmail          Boolean            @default(true)
-  // enableProductEmail             Boolean            @default(true)
-  // enableMarketingEmail           Boolean            @default(true)
-}
-
 model Hub {
   id            Int               @id @default(autoincrement())
   uuid          String            @unique @default(uuid())
@@ -79,8 +46,7 @@ model Hub {
   theme         String?           @db.VarChar(50)
   visibility    VISIBILITY_CHOICE @default(PUBLIC)
   description   String?           @default("")
-  owner         User?             @relation(references: [id], fields: [ownerId], onDelete: SetNull)
-  ownerId       Int?
+  ownerId       String?
   slug          String            @unique @db.VarChar(256)
   rosters       Roster[]
   members       HubMembership[]
@@ -92,7 +58,6 @@ model Hub {
 
 model HubMembership {
   uuid       String    @unique @default(uuid())
-  user       User      @relation(references: [id], fields: [hubUserid], onDelete: Cascade)
   hubUserid  Int
   hub        Hub       @relation(references: [id], fields: [hubId], onDelete: Cascade)
   hubId      Int
@@ -116,12 +81,9 @@ model Roster {
   rotationType            ROTATION_CHOICE?
   hub                     Hub                @relation(references: [id], fields: [hubId], onDelete: Cascade)
   hubId                   Int
-  createdBy               User?              @relation("CreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  createdById             Int?
-  currentTurn             User?              @relation("CurrentTurn", references: [id], fields: [currentTurnId], onDelete: SetNull)
-  currentTurnId           Int?
-  nextTurn                User?              @relation("NextTurn", references: [id], fields: [nextTurnId], onDelete: SetNull)
-  nextTurnId              Int?
+  createdById             String?
+  currentTurnId           String?
+  nextTurnId              String?
   nextDate                DateTime?          @db.Timestamptz(3)
   status                  STATUS_CHOICE      @default(PENDING)
   members                 RosterMembership[]
@@ -136,8 +98,7 @@ model Roster {
 
 model RosterMembership {
   uuid         String   @unique @default(uuid())
-  user         User     @relation(references: [id], fields: [rosterUserId], onDelete: Cascade)
-  rosterUserId Int
+  rosterUserId String
   roster       Roster   @relation(references: [id], fields: [rosterId], onDelete: Cascade)
   rosterId     Int
   dateJoined   DateTime @default(now()) @db.Timestamptz(3)
@@ -154,8 +115,7 @@ model Activity {
   title     String   @db.VarChar(256)
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   meta      Json?
-  actor     User?    @relation(references: [id], fields: [actorId], onDelete: SetNull)
-  actorId   Int?
+  actorId   String?
   body      String?  @default("")
   hub       Hub?     @relation(references: [id], fields: [hubId], onDelete: SetNull)
   hubId     Int?
@@ -167,8 +127,7 @@ model Activity {
 model Comment {
   id        Int      @id @default(autoincrement())
   uuid      String   @unique @default(uuid())
-  user      User?    @relation(references: [id], fields: [userId], onDelete: SetNull)
-  userId    Int?
+  userId    String?
   content   String   @default("")
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   roster    Roster?  @relation(references: [id], fields: [rosterId], onDelete: SetNull)
@@ -179,7 +138,7 @@ model Comment {
 model Notification {
   id        Int      @id @default(autoincrement())
   uuid      String   @unique @default(uuid())
-  users     User[]
+  users     String[]
   body      String?  @default("")
   email     String?
   meta      Json?
@@ -205,7 +164,7 @@ model Turn {
   event                        Json?
   rosterMembership             RosterMembership?  @relation(fields: [rosterMembershipRosterId, rosterMembershipRosterUserId], references: [rosterId, rosterUserId])
   rosterMembershipRosterId     Int?
-  rosterMembershipRosterUserId Int?
+  rosterMembershipRosterUserId String?
   isDeleted                    Boolean            @default(false)
   notifications                Notification[]
 }
@@ -216,10 +175,8 @@ model Invite {
   createdAt    DateTime      @default(now()) @db.Timestamptz(3)
   notification Notification?
   status       STATUS_CHOICE @default(PENDING)
-  from         User?         @relation("InviteSender", references: [id], fields: [fromId], onDelete: SetNull)
-  fromId       Int?
-  recipient    User?         @relation("InviteRecipient", references: [id], fields: [recipientId], onDelete: SetNull)
-  recipientId  Int?
+  fromId       String?
+  recipientId  String?
   email        String
   hub          Hub?          @relation(references: [id], fields: [hubId], onDelete: SetNull)
   hubId        Int?
