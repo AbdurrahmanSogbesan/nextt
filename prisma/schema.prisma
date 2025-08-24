@@ -7,8 +7,231 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Message {
+enum VISIBILITY_CHOICE {
+  PUBLIC
+  PRIVATE
+  UNLISTED
+}
+
+enum ROTATION_CHOICE {
+  DAILY
+  WEEKLY
+  MONTHLY
+  ANNUALLY
+  CUSTOM
+}
+
+enum ROTATION_TYPE {
+  DAILY
+  WEEKLY
+  ANNUALLY
+}
+
+enum STATUS_CHOICE {
+  ONGOING
+  PENDING
+  COMPLETE
+}
+
+enum TURN_STATUS_CHOICE {
+  PENDING
+  DONE
+}
+
+model User {
+  id                Int                @id @default(autoincrement())
+  uuid              String             @unique @default(uuid())
+  createdAt         DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime           @updatedAt @db.Timestamptz(3)
+  firstName         String             @default("")
+  lastName          String             @default("")
+  email             String             @unique
+  clerkUid          String             @unique
+  phone             String             @default("") @db.VarChar(50)
+  dob               DateTime?
+  avatar            String?            @db.VarChar(400)
+  nickname          String             @default("")
+  createdHubs       Hub[]
+  createdRosters    Roster[]           @relation("CreatedBy")
+  currentIn         Roster[]           @relation("CurrentTurn")
+  nextIn            Roster[]           @relation("NextTurn")
+  rosterMemberships RosterMembership[]
+  hubMemberships    HubMembership[]
+  activities        Activity[]
+  comments          Comment[]
+  notifications     Notification[]
+  invites           Invite[]           @relation("InviteRecipient")
+  invitesSent       Invite[]           @relation("InviteSender")
+  isDeleted         Boolean            @default(false)
+  // enablePersonalInformationEmail Boolean            @default(true)
+  // enableRosterEmail              Boolean            @default(true)
+  // enableHubEmail                 Boolean            @default(true)
+  // enableNewFeatureEmail          Boolean            @default(true)
+  // enableProductEmail             Boolean            @default(true)
+  // enableMarketingEmail           Boolean            @default(true)
+}
+
+model Hub {
+  id            Int               @id @default(autoincrement())
+  uuid          String            @unique @default(uuid())
+  name          String            @db.VarChar(256)
+  logo          String?           @db.VarChar(400)
+  theme         String?           @db.VarChar(50)
+  visibility    VISIBILITY_CHOICE @default(PUBLIC)
+  description   String?           @default("")
+  owner         User?             @relation(references: [id], fields: [ownerId], onDelete: SetNull)
+  ownerId       Int?
+  slug          String            @unique @db.VarChar(256)
+  rosters       Roster[]
+  members       HubMembership[]
+  activities    Activity[]
+  notifications Notification[]
+  invitesSent   Invite[]
+  isDeleted     Boolean           @default(false)
+}
+
+model HubMembership {
+  uuid       String    @unique @default(uuid())
+  user       User      @relation(references: [id], fields: [hubUserid], onDelete: Cascade)
+  hubUserid  Int
+  hub        Hub       @relation(references: [id], fields: [hubId], onDelete: Cascade)
+  hubId      Int
+  dateJoined DateTime  @default(now()) @db.Timestamptz(3)
+  isAdmin    Boolean   @default(false)
+  isDeleted  Boolean   @default(false)
+  dateLeft   DateTime? @db.Timestamptz(3)
+
+  @@id([hubId, hubUserid])
+}
+
+model Roster {
+  id                      Int                @id @default(autoincrement())
+  uuid                    String             @unique @default(uuid())
+  name                    String             @db.VarChar(256)
+  description             String?            @default("")
+  isPrivate               Boolean            @default(false)
+  enablePushNotifications Boolean            @default(true)
+  start                   DateTime           @db.Timestamptz(3)
+  end                     DateTime           @db.Timestamptz(3)
+  rotationType            ROTATION_CHOICE?
+  hub                     Hub                @relation(references: [id], fields: [hubId], onDelete: Cascade)
+  hubId                   Int
+  createdBy               User?              @relation("CreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdById             Int?
+  currentTurn             User?              @relation("CurrentTurn", references: [id], fields: [currentTurnId], onDelete: SetNull)
+  currentTurnId           Int?
+  nextTurn                User?              @relation("NextTurn", references: [id], fields: [nextTurnId], onDelete: SetNull)
+  nextTurnId              Int?
+  nextDate                DateTime?          @db.Timestamptz(3)
+  status                  STATUS_CHOICE      @default(PENDING)
+  members                 RosterMembership[]
+  comments                Comment[]
+  turns                   Turn[]
+  activities              Activity[]
+  notifications           Notification[]
+  invitesSent             Invite[]
+  isDeleted               Boolean            @default(false)
+  rotationOption          RotationOption?
+}
+
+model RosterMembership {
+  uuid         String   @unique @default(uuid())
+  user         User     @relation(references: [id], fields: [rosterUserId], onDelete: Cascade)
+  rosterUserId Int
+  roster       Roster   @relation(references: [id], fields: [rosterId], onDelete: Cascade)
+  rosterId     Int
+  dateJoined   DateTime @default(now()) @db.Timestamptz(3)
+  position     Int
+  turn         Turn[]
+  isAdmin      Boolean  @default(false)
+  isDeleted    Boolean  @default(false)
+
+  @@id([rosterId, rosterUserId])
+}
+
+model Activity {
   id        Int      @id @default(autoincrement())
-  content   String
-  createdAt DateTime @default(now())
+  title     String   @db.VarChar(256)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  meta      Json?
+  actor     User?    @relation(references: [id], fields: [actorId], onDelete: SetNull)
+  actorId   Int?
+  body      String?  @default("")
+  hub       Hub?     @relation(references: [id], fields: [hubId], onDelete: SetNull)
+  hubId     Int?
+  roster    Roster?  @relation(references: [id], fields: [rosterId], onDelete: SetNull)
+  rosterId  Int?
+  isDeleted Boolean  @default(false)
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  uuid      String   @unique @default(uuid())
+  user      User?    @relation(references: [id], fields: [userId], onDelete: SetNull)
+  userId    Int?
+  content   String   @default("")
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  roster    Roster?  @relation(references: [id], fields: [rosterId], onDelete: SetNull)
+  rosterId  Int?
+  isDeleted Boolean  @default(false)
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  uuid      String   @unique @default(uuid())
+  users     User[]
+  body      String?  @default("")
+  email     String?
+  meta      Json?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  roster    Roster?  @relation(references: [id], fields: [rosterId], onDelete: SetNull)
+  rosterId  Int?
+  hub       Hub?     @relation(references: [id], fields: [hubId], onDelete: SetNull)
+  hubId     Int?
+  invite    Invite?  @relation(references: [id], fields: [inviteId], onDelete: SetNull)
+  inviteId  Int?     @unique
+  isDeleted Boolean  @default(false)
+  turn      Turn?    @relation(references: [id], fields: [turnId], onDelete: SetNull)
+  turnId    Int?
+}
+
+model Turn {
+  id                           Int                @id @default(autoincrement())
+  uuid                         String             @unique @default(uuid())
+  status                       TURN_STATUS_CHOICE @default(PENDING)
+  roster                       Roster?            @relation(references: [id], fields: [rosterId], onDelete: SetNull)
+  rosterId                     Int?
+  dueDate                      DateTime?          @db.Timestamptz(3)
+  event                        Json?
+  rosterMembership             RosterMembership?  @relation(fields: [rosterMembershipRosterId, rosterMembershipRosterUserId], references: [rosterId, rosterUserId])
+  rosterMembershipRosterId     Int?
+  rosterMembershipRosterUserId Int?
+  isDeleted                    Boolean            @default(false)
+  notifications                Notification[]
+}
+
+model Invite {
+  id           Int           @id @default(autoincrement())
+  uuid         String        @unique @default(uuid())
+  createdAt    DateTime      @default(now()) @db.Timestamptz(3)
+  notification Notification?
+  status       STATUS_CHOICE @default(PENDING)
+  from         User?         @relation("InviteSender", references: [id], fields: [fromId], onDelete: SetNull)
+  fromId       Int?
+  recipient    User?         @relation("InviteRecipient", references: [id], fields: [recipientId], onDelete: SetNull)
+  recipientId  Int?
+  email        String
+  hub          Hub?          @relation(references: [id], fields: [hubId], onDelete: SetNull)
+  hubId        Int?
+  roster       Roster?       @relation(references: [id], fields: [rosterId], onDelete: SetNull)
+  rosterId     Int?
+  isDeleted    Boolean       @default(false)
+}
+
+model RotationOption {
+  id       Int           @id @default(autoincrement())
+  roster   Roster        @relation(references: [id], fields: [rosterId])
+  rosterId Int           @unique
+  rotation ROTATION_TYPE
+  unit     Int
 }
