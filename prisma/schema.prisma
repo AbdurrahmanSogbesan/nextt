@@ -38,6 +38,39 @@ enum TURN_STATUS_CHOICE {
   DONE
 }
 
+// model User {
+// id                Int                @id @default(autoincrement())
+// uuid              String             @unique @default(uuid())
+// createdAt         DateTime           @default(now()) @db.Timestamptz(3)
+// updatedAt         DateTime           @updatedAt @db.Timestamptz(3)
+// firstName         String             @default("")
+// lastName          String             @default("")
+// email             String             @unique
+// clerkUid          String             @unique
+// phone             String             @default("") @db.VarChar(50)
+// dob               DateTime?
+// avatar            String?            @db.VarChar(400)
+// nickname          String             @default("")
+// createdHubs       Hub[]
+// createdRosters    Roster[]           @relation("CreatedBy")
+// currentIn         Roster[]           @relation("CurrentTurn")
+// nextIn            Roster[]           @relation("NextTurn")
+// rosterMemberships RosterMembership[]
+// hubMemberships    HubMembership[]
+// activities        Activity[]
+// comments          Comment[]
+// notifications     Notification[]
+// invites           Invite[]           @relation("InviteRecipient")
+// invitesSent       Invite[]           @relation("InviteSender")
+// isDeleted         Boolean            @default(false)
+// enablePersonalInformationEmail Boolean            @default(true)
+// enableRosterEmail              Boolean            @default(true)
+// enableHubEmail                 Boolean            @default(true)
+// enableNewFeatureEmail          Boolean            @default(true)
+// enableProductEmail             Boolean            @default(true)
+// enableMarketingEmail           Boolean            @default(true)
+// }
+
 model Hub {
   id            Int               @id @default(autoincrement())
   uuid          String            @unique @default(uuid())
