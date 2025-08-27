@@ -16,7 +16,9 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body className="">{children}</body>
+        <body className="bg-[radial-gradient(50%_120%_at_50%_-10%,rgba(99,102,241,0.12),transparent),linear-gradient(to_bottom,transparent,transparent)]">
+          {children}
+        </body>
       </html>
     </ClerkProvider>
   );
