@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { z } from 'zod';
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import ThemeSwatches from '@/components/ThemeSwatches';
-import Dropzone from '@/components/Dropzone';
+import { z } from "zod";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import ThemeSwatches from "@/components/ThemeSwatches";
+import Dropzone from "@/components/Dropzone";
 import {
   Card,
   CardHeader,
@@ -13,10 +13,10 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormField,
@@ -24,62 +24,54 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
-} from '@/components/ui/form';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import Image from 'next/image';
+} from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import Image from "next/image";
+import { createHubSchema } from "@/lib/schemas";
 
-const Schema = z.object({
-  name: z.string().min(2, 'Name is required'),
-  // the DB still stores a URL, but the user never types it
-  logoUrl: z.string().url().nullable().optional(),
-  theme: z.string().optional().or(z.literal('')),
-  visibility: z.enum(['PUBLIC', 'PRIVATE', 'UNLISTED']),
-  description: z.string().max(500).optional(),
-});
-
-type Values = z.infer<typeof Schema>;
+type Values = z.infer<typeof createHubSchema>;
 
 const themeToBg: Record<string, string> = {
-  indigo: 'bg-indigo-500',
-  sky: 'bg-sky-400',
-  rose: 'bg-rose-500',
-  emerald: 'bg-emerald-500',
-  amber: 'bg-amber-500',
-  zinc: 'bg-zinc-600',
+  indigo: "bg-indigo-500",
+  sky: "bg-sky-400",
+  rose: "bg-rose-500",
+  emerald: "bg-emerald-500",
+  amber: "bg-amber-500",
+  zinc: "bg-zinc-600",
 };
 
 export default function NewHubPage() {
   const router = useRouter();
 
   const form = useForm<Values>({
-    resolver: zodResolver(Schema),
+    resolver: zodResolver(createHubSchema),
     defaultValues: {
-      name: '',
+      name: "",
       logoUrl: null,
-      theme: 'indigo',
-      visibility: 'PRIVATE',
-      description: '',
+      theme: "indigo",
+      visibility: "PRIVATE",
+      description: "",
     },
   });
 
   async function onSubmit(values: Values) {
-    const res = await fetch('/api/hubs', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const res = await fetch("/api/hubs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(values),
     });
     if (!res.ok) {
       const t = await res.text();
-      alert('Failed to create hub: ' + t);
+      alert("Failed to create hub: " + t);
       return;
     }
     const { id } = await res.json();
     router.push(`/hub/${id}`);
   }
 
-  const themeValue = form.watch('theme');
-  const logoUrl = form.watch('logoUrl');
+  const themeValue = form.watch("theme");
+  const logoUrl = form.watch("logoUrl");
 
   return (
     <div className="min-h-screen">
@@ -118,7 +110,7 @@ export default function NewHubPage() {
                           <Dropzone
                             value={logoUrl ?? null}
                             onChange={(url: string | null) =>
-                              form.setValue('logoUrl', url)
+                              form.setValue("logoUrl", url)
                             }
                           />
                         </FormControl>
@@ -218,7 +210,7 @@ export default function NewHubPage() {
                           <ThemeSwatches
                             value={field.value}
                             onChange={(v) =>
-                              form.setValue('theme', v, { shouldDirty: true })
+                              form.setValue("theme", v, { shouldDirty: true })
                             }
                           />
                         </FormControl>
@@ -232,7 +224,7 @@ export default function NewHubPage() {
                       <Button
                         type="button"
                         variant="ghost"
-                        onClick={() => router.push('/dashboard')}
+                        onClick={() => router.push("/dashboard")}
                       >
                         Cancel
                       </Button>
@@ -266,22 +258,22 @@ export default function NewHubPage() {
                   ) : (
                     <div
                       className={`h-9 w-9 rounded-xl ${
-                        themeToBg[themeValue ?? 'indigo']
+                        themeToBg[themeValue ?? "indigo"]
                       }`}
                     />
                   )}
                   <div className="flex flex-col">
                     <div className="text-base font-medium">
-                      {form.watch('name') || 'Your hub name'}
+                      {form.watch("name") || "Your hub name"}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {form.watch('visibility') || 'PRIVATE'}
+                      {form.watch("visibility") || "PRIVATE"}
                     </div>
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {form.watch('description') ||
-                    'Short description will appear here. Keep it clear and friendly.'}
+                  {form.watch("description") ||
+                    "Short description will appear here. Keep it clear and friendly."}
                 </p>
               </div>
             </CardContent>

@@ -91,7 +91,7 @@ model Hub {
 
 model HubMembership {
   uuid       String    @unique @default(uuid())
-  hubUserid  Int
+  hubUserid  String
   hub        Hub       @relation(references: [id], fields: [hubId], onDelete: Cascade)
   hubId      Int
   dateJoined DateTime  @default(now()) @db.Timestamptz(3)
