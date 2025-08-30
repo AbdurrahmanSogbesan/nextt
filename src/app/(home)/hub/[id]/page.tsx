@@ -1,81 +1,81 @@
-import { auth } from '@clerk/nextjs/server';
-import { notFound, redirect } from 'next/navigation';
-import { Button } from '@/components/ui/button';
+import { auth } from "@clerk/nextjs/server";
+import { notFound, redirect } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Info, Lock, Plus, UserPlus } from 'lucide-react';
-import Link from 'next/link';
+} from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Info, Lock, Plus, UserPlus } from "lucide-react";
+import Link from "next/link";
 
 // Map your saved hub.theme to utility classes.
 // Tailwind cannot read dynamic class names, so keep this mapping in code.
 const accent = (t?: string) => {
   const M = {
     indigo: {
-      softBg: 'bg-indigo-500/15',
-      solidBg: 'bg-indigo-500',
-      text: 'text-indigo-600',
-      ring: 'ring-indigo-500/30',
-      chip: 'bg-indigo-600/10 text-indigo-700',
-      dot: 'bg-indigo-500',
+      softBg: "bg-indigo-500/15",
+      solidBg: "bg-indigo-500",
+      text: "text-indigo-600",
+      ring: "ring-indigo-500/30",
+      chip: "bg-indigo-600/10 text-indigo-700",
+      dot: "bg-indigo-500",
     },
     sky: {
-      softBg: 'bg-sky-400/15',
-      solidBg: 'bg-sky-400',
-      text: 'text-sky-600',
-      ring: 'ring-sky-400/30',
-      chip: 'bg-sky-600/10 text-sky-700',
-      dot: 'bg-sky-400',
+      softBg: "bg-sky-400/15",
+      solidBg: "bg-sky-400",
+      text: "text-sky-600",
+      ring: "ring-sky-400/30",
+      chip: "bg-sky-600/10 text-sky-700",
+      dot: "bg-sky-400",
     },
     rose: {
-      softBg: 'bg-rose-500/15',
-      solidBg: 'bg-rose-500',
-      text: 'text-rose-600',
-      ring: 'ring-rose-500/30',
-      chip: 'bg-rose-600/10 text-rose-700',
-      dot: 'bg-rose-500',
+      softBg: "bg-rose-500/15",
+      solidBg: "bg-rose-500",
+      text: "text-rose-600",
+      ring: "ring-rose-500/30",
+      chip: "bg-rose-600/10 text-rose-700",
+      dot: "bg-rose-500",
     },
     emerald: {
-      softBg: 'bg-emerald-500/15',
-      solidBg: 'bg-emerald-500',
-      text: 'text-emerald-600',
-      ring: 'ring-emerald-500/30',
-      chip: 'bg-emerald-600/10 text-emerald-700',
-      dot: 'bg-emerald-500',
+      softBg: "bg-emerald-500/15",
+      solidBg: "bg-emerald-500",
+      text: "text-emerald-600",
+      ring: "ring-emerald-500/30",
+      chip: "bg-emerald-600/10 text-emerald-700",
+      dot: "bg-emerald-500",
     },
     amber: {
-      softBg: 'bg-amber-500/20',
-      solidBg: 'bg-amber-500',
-      text: 'text-amber-600',
-      ring: 'ring-amber-500/30',
-      chip: 'bg-amber-600/10 text-amber-700',
-      dot: 'bg-amber-500',
+      softBg: "bg-amber-500/20",
+      solidBg: "bg-amber-500",
+      text: "text-amber-600",
+      ring: "ring-amber-500/30",
+      chip: "bg-amber-600/10 text-amber-700",
+      dot: "bg-amber-500",
     },
     zinc: {
-      softBg: 'bg-zinc-600/15',
-      solidBg: 'bg-zinc-600',
-      text: 'text-zinc-700',
-      ring: 'ring-zinc-600/30',
-      chip: 'bg-zinc-700/10 text-zinc-700',
-      dot: 'bg-zinc-600',
+      softBg: "bg-zinc-600/15",
+      solidBg: "bg-zinc-600",
+      text: "text-zinc-700",
+      ring: "ring-zinc-600/30",
+      chip: "bg-zinc-700/10 text-zinc-700",
+      dot: "bg-zinc-600",
     },
   } as const;
-  return M[(t as keyof typeof M) || 'indigo'];
+  return M[(t as keyof typeof M) || "indigo"];
 };
 
 // Small helpers
 function Initials({ name }: { name?: string | null }) {
-  const n = (name || '').trim();
-  const parts = n.split(' ');
-  const init = (parts[0]?.[0] || '') + (parts[1]?.[0] || '');
-  return <>{init.toUpperCase() || 'U'}</>;
+  const n = (name || "").trim();
+  const parts = n.split(" ");
+  const init = (parts[0]?.[0] || "") + (parts[1]?.[0] || "");
+  return <>{init.toUpperCase() || "U"}</>;
 }
 
 function AvatarStack({
@@ -91,9 +91,9 @@ function AvatarStack({
     <div className="flex -space-x-2">
       {shown.map((p, i) => (
         <Avatar key={i} className="h-7 w-7 ring-2 ring-background">
-          <AvatarImage src={p.avatarUrl || ''} />
+          <AvatarImage src={p.avatarUrl || ""} />
           <AvatarFallback className="text-[10px]">
-            <Initials name={p.name || ''} />
+            <Initials name={p.name || ""} />
           </AvatarFallback>
         </Avatar>
       ))}
@@ -109,11 +109,11 @@ function AvatarStack({
 export default async function HubDashboard({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const { userId } = await auth();
 
-  if (!userId) redirect('/sign-in');
+  if (!userId) redirect("/sign-in");
 
   // const hub = await prisma.hub
   //   .findUnique({
@@ -136,69 +136,69 @@ export default async function HubDashboard({
   //   .catch(() => null as any);
 
   const hub = {
-    id: 'dummy-hub-id',
-    name: 'Dummy Hub',
-    description: 'This is a dummy hub for testing purposes.',
-    visibility: 'PUBLIC',
+    id: "dummy-hub-id",
+    name: "Dummy Hub",
+    description: "This is a dummy hub for testing purposes.",
+    visibility: "PUBLIC",
     members: [
       {
-        id: 'dummy-user-id',
+        id: "dummy-user-id",
         joinedAt: new Date(),
         user: {
-          firstName: 'Oluwabusayo',
-          lastName: 'Jacobs',
-          email: 'jacobsbusayo@gmail.com',
-          avatarUrl: 'https://i.pravatar.cc/150?img=3',
+          firstName: "Oluwabusayo",
+          lastName: "Jacobs",
+          email: "jacobsbusayo@gmail.com",
+          avatarUrl: "https://i.pravatar.cc/150?img=3",
         },
       },
       {
-        id: 'dummy-user-id-2',
+        id: "dummy-user-id-2",
         joinedAt: new Date(),
         user: {
-          firstName: 'Jane',
-          lastName: 'Doe',
-          email: 'jane.doe@example.com',
-          avatarUrl: 'https://i.pravatar.cc/150?img=4',
+          firstName: "Jane",
+          lastName: "Doe",
+          email: "jane.doe@example.com",
+          avatarUrl: "https://i.pravatar.cc/150?img=4",
         },
       },
     ],
     rosters: [
       {
-        id: 'dummy-roster-id',
-        name: 'Dummy Roster',
-        description: 'This is a dummy roster for testing purposes.',
+        id: "dummy-roster-id",
+        name: "Dummy Roster",
+        description: "This is a dummy roster for testing purposes.",
         createdAt: new Date(),
         updatedAt: new Date(),
         isLocked: false,
         members: [
           {
-            id: 'dummy-user-id',
+            id: "dummy-user-id",
             joinedAt: new Date(),
             user: {
-              firstName: 'Oluwabusayo',
-              lastName: 'Jacobs',
-              email: 'jacobsbusayo@gmail.com',
-              avatarUrl: 'https://i.pravatar.cc/150?img=3',
+              firstName: "Oluwabusayo",
+              lastName: "Jacobs",
+              email: "jacobsbusayo@gmail.com",
+              avatarUrl: "https://i.pravatar.cc/150?img=3",
             },
           },
         ],
       },
       {
-        id: 'dummy-roster-id-2',
-        name: 'Dummy Roster 2',
-        description: 'This is a dummy roster for testing purposes.',
+        id: "dummy-roster-id-2",
+        name: "Dummy Roster 2",
+        description: "This is a dummy roster for testing purposes.",
         createdAt: new Date(),
         updatedAt: new Date(),
         isLocked: false,
         members: [
           {
-            id: 'dummy-user-id-2',
+            id: "dummy-user-id-2",
             joinedAt: new Date(),
             user: {
-              firstName: 'Jane',
-              lastName: 'Doe',
-              email: 'jane.doe@example.com',
-              avatarUrl: 'https://i.pravatar.cc/150?img=4',
+              firstName: "Jane",
+              lastName: "Doe",
+              email: "jane.doe@example.com",
+              avatarUrl: "https://i.pravatar.cc/150?img=4",
             },
           },
         ],
@@ -206,48 +206,48 @@ export default async function HubDashboard({
     ],
     activities: [
       {
-        id: 'dummy-activity-id',
-        title: 'Dummy Activity',
-        subtitle: 'This is a dummy activity subtitle.',
-        description: 'This is a dummy activity for testing purposes.',
+        id: "dummy-activity-id",
+        title: "Dummy Activity",
+        subtitle: "This is a dummy activity subtitle.",
+        description: "This is a dummy activity for testing purposes.",
         createdAt: new Date(),
         updatedAt: new Date(),
         actor: {
-          id: 'dummy-user-id',
+          id: "dummy-user-id",
           joinedAt: new Date(),
 
-          firstName: 'Oluwabusayo',
-          lastName: 'Jacobs',
-          email: 'jacobsbusayo@gmail.com',
-          avatarUrl: 'https://i.pravatar.cc/150?img=3',
+          firstName: "Oluwabusayo",
+          lastName: "Jacobs",
+          email: "jacobsbusayo@gmail.com",
+          avatarUrl: "https://i.pravatar.cc/150?img=3",
         },
       },
       {
-        id: 'dummy-activity-id-2',
-        title: 'Dummy Activity 2',
-        subtitle: 'This is a dummy activity subtitle.',
-        description: 'This is a dummy activity for testing purposes.',
+        id: "dummy-activity-id-2",
+        title: "Dummy Activity 2",
+        subtitle: "This is a dummy activity subtitle.",
+        description: "This is a dummy activity for testing purposes.",
         createdAt: new Date(),
         updatedAt: new Date(),
         actor: {
-          id: 'dummy-user-id-2',
+          id: "dummy-user-id-2",
           joinedAt: new Date(),
-          firstName: 'Jane',
-          lastName: 'Doe',
-          email: 'jane.doe@example.com',
-          avatarUrl: 'https://i.pravatar.cc/150?img=4',
+          firstName: "Jane",
+          lastName: "Doe",
+          email: "jane.doe@example.com",
+          avatarUrl: "https://i.pravatar.cc/150?img=4",
         },
       },
     ],
-    theme: 'indigo',
+    theme: "indigo",
   };
 
   if (!hub) notFound();
 
   const isMember = hub.members.some((m) => m.id === userId);
-  if (!isMember && hub.visibility === 'PRIVATE') notFound();
+  if (!isMember && hub.visibility === "PRIVATE") notFound();
 
-  const theme = accent(hub.theme || 'indigo');
+  const theme = accent(hub.theme || "indigo");
 
   const memberCount = hub.members.length;
   const rosterCount = hub.rosters?.length ?? 0;
@@ -261,7 +261,7 @@ export default async function HubDashboard({
             <div>
               <p className="text-sm text-muted-foreground">Welcome back</p>
               <h1 className="text-3xl font-semibold tracking-tight">
-                {'Oluwabusayo Jacobs'}
+                {"Oluwabusayo Jacobs"}
                 {hub.name}
               </h1>
               {hub.description && (
@@ -424,7 +424,7 @@ export default async function HubDashboard({
                   <CardContent className="p-5">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={m.user.avatarUrl || ''} />
+                        <AvatarImage src={m.user.avatarUrl || ""} />
                         <AvatarFallback>
                           <Initials name={full} />
                         </AvatarFallback>
@@ -473,7 +473,7 @@ export default async function HubDashboard({
               >
                 <div className="flex items-center gap-3">
                   <Avatar className="h-9 w-9">
-                    <AvatarImage src={a.actor?.avatarUrl || ''} />
+                    <AvatarImage src={a.actor?.avatarUrl || ""} />
                     <AvatarFallback>
                       <Initials
                         name={`${a.actor?.firstName} ${a.actor?.lastName}`}
@@ -481,7 +481,7 @@ export default async function HubDashboard({
                     </AvatarFallback>
                   </Avatar>
                   <div className="text-sm">
-                    <p className="font-medium">{a.title || 'Activity'}</p>
+                    <p className="font-medium">{a.title || "Activity"}</p>
                     <p className="text-xs text-muted-foreground">
                       {a.subtitle || a.description}
                     </p>
@@ -489,8 +489,8 @@ export default async function HubDashboard({
                 </div>
                 <div className="text-xs text-muted-foreground">
                   {new Date(a.createdAt).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
+                    hour: "2-digit",
+                    minute: "2-digit",
                   })}
                 </div>
               </div>
