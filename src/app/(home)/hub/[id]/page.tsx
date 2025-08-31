@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { notFound, redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Info, Lock, Plus, UserPlus } from "lucide-react";
 import Link from "next/link";
+import prisma from "@/lib/prisma";
 
 // Map your saved hub.theme to utility classes.
 // Tailwind cannot read dynamic class names, so keep this mapping in code.
@@ -112,139 +113,88 @@ export default async function HubDashboard({
   params: Promise<{ id: string }>;
 }) {
   const { userId } = await auth();
+  const { id } = await params;
 
   if (!userId) redirect("/sign-in");
 
-  // const hub = await prisma.hub
-  //   .findUnique({
-  //     where: { id: params.id },
-  //     include: {
-  //       members: { include: { user: true }, orderBy: { joinedAt: 'desc' } },
-  //       // If you have these models, great. If not, see the schema note at the end.
-  //       rosters: {
-  //         include: { members: true },
-  //         orderBy: { createdAt: 'desc' },
-  //         take: 10,
-  //       },
-  //       activities: {
-  //         include: { actor: true },
-  //         orderBy: { createdAt: 'desc' },
-  //         take: 8,
-  //       },
-  //     },
-  //   })
-  //   .catch(() => null as any);
+  const hubSkeleton = await prisma.hub
+    .findUnique({
+      where: { uuid: id },
+      include: {
+        members: { orderBy: { dateJoined: "desc" } },
+        rosters: {
+          include: { members: true },
+          take: 10,
+        },
+        activities: {
+          orderBy: { createdAt: "desc" },
+          take: 8,
+        },
+      },
+    })
+    .catch(() => null);
 
+  const uniqueIds = new Set([
+    ...(hubSkeleton?.members.map((m) => m.hubUserid) || []),
+    ...(hubSkeleton?.rosters.flatMap((ros) =>
+      ros.members.map((rom) => rom.rosterUserId)
+    ) || []),
+  ]);
+
+  const client = await clerkClient();
+
+  const { data: usersData } = await client.users.getUserList({
+    userId: Array.from(uniqueIds),
+  });
+
+  // Create user map for quick lookups
+  const userMap = new Map(
+    usersData.map((user) => [
+      user.id,
+      {
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.emailAddresses[0]?.emailAddress || "",
+        avatarUrl: user.imageUrl,
+      },
+    ])
+  );
+
+  // Helper function to get user info or fallback
+  const getUserInfo = (userId: string) =>
+    userMap.get(userId) || {
+      firstName: "Unknown",
+      lastName: "User",
+      email: "",
+      avatarUrl: "",
+    };
+
+  // Enrich hub data with user information
   const hub = {
-    id: "dummy-hub-id",
-    name: "Dummy Hub",
-    description: "This is a dummy hub for testing purposes.",
-    visibility: "PUBLIC",
-    members: [
-      {
-        id: "dummy-user-id",
-        joinedAt: new Date(),
-        user: {
-          firstName: "Oluwabusayo",
-          lastName: "Jacobs",
-          email: "jacobsbusayo@gmail.com",
-          avatarUrl: "https://i.pravatar.cc/150?img=3",
-        },
-      },
-      {
-        id: "dummy-user-id-2",
-        joinedAt: new Date(),
-        user: {
-          firstName: "Jane",
-          lastName: "Doe",
-          email: "jane.doe@example.com",
-          avatarUrl: "https://i.pravatar.cc/150?img=4",
-        },
-      },
-    ],
-    rosters: [
-      {
-        id: "dummy-roster-id",
-        name: "Dummy Roster",
-        description: "This is a dummy roster for testing purposes.",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isLocked: false,
-        members: [
-          {
-            id: "dummy-user-id",
-            joinedAt: new Date(),
-            user: {
-              firstName: "Oluwabusayo",
-              lastName: "Jacobs",
-              email: "jacobsbusayo@gmail.com",
-              avatarUrl: "https://i.pravatar.cc/150?img=3",
-            },
-          },
-        ],
-      },
-      {
-        id: "dummy-roster-id-2",
-        name: "Dummy Roster 2",
-        description: "This is a dummy roster for testing purposes.",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isLocked: false,
-        members: [
-          {
-            id: "dummy-user-id-2",
-            joinedAt: new Date(),
-            user: {
-              firstName: "Jane",
-              lastName: "Doe",
-              email: "jane.doe@example.com",
-              avatarUrl: "https://i.pravatar.cc/150?img=4",
-            },
-          },
-        ],
-      },
-    ],
-    activities: [
-      {
-        id: "dummy-activity-id",
-        title: "Dummy Activity",
-        subtitle: "This is a dummy activity subtitle.",
-        description: "This is a dummy activity for testing purposes.",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        actor: {
-          id: "dummy-user-id",
-          joinedAt: new Date(),
-
-          firstName: "Oluwabusayo",
-          lastName: "Jacobs",
-          email: "jacobsbusayo@gmail.com",
-          avatarUrl: "https://i.pravatar.cc/150?img=3",
-        },
-      },
-      {
-        id: "dummy-activity-id-2",
-        title: "Dummy Activity 2",
-        subtitle: "This is a dummy activity subtitle.",
-        description: "This is a dummy activity for testing purposes.",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        actor: {
-          id: "dummy-user-id-2",
-          joinedAt: new Date(),
-          firstName: "Jane",
-          lastName: "Doe",
-          email: "jane.doe@example.com",
-          avatarUrl: "https://i.pravatar.cc/150?img=4",
-        },
-      },
-    ],
-    theme: "indigo",
+    ...hubSkeleton,
+    members:
+      hubSkeleton?.members.map((member) => ({
+        ...member,
+        user: getUserInfo(member.hubUserid),
+      })) || [],
+    rosters:
+      hubSkeleton?.rosters.map((roster) => ({
+        ...roster,
+        members: roster.members.map((member) => ({
+          ...member,
+          user: getUserInfo(member.rosterUserId),
+        })),
+      })) || [],
+    activities:
+      hubSkeleton?.activities.map((activity) => ({
+        ...activity,
+        actor: activity.actorId ? getUserInfo(activity.actorId) : null,
+      })) || [],
   };
 
   if (!hub) notFound();
 
-  const isMember = hub.members.some((m) => m.id === userId);
+  const isMember = hub.members.some((m) => m.hubUserid === userId);
   if (!isMember && hub.visibility === "PRIVATE") notFound();
 
   const theme = accent(hub.theme || "indigo");
@@ -259,9 +209,10 @@ export default async function HubDashboard({
         <div className="relative mx-auto w-full max-w-6xl px-4 py-8">
           <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
             <div>
-              <p className="text-sm text-muted-foreground">Welcome back</p>
+              <p className="text-sm text-muted-foreground">
+                Welcome back, {getUserInfo(userId).firstName}
+              </p>
               <h1 className="text-3xl font-semibold tracking-tight">
-                {"Oluwabusayo Jacobs"}
                 {hub.name}
               </h1>
               {hub.description && (
@@ -272,13 +223,13 @@ export default async function HubDashboard({
             </div>
 
             <div className="flex gap-2">
-              <Link href={`/hub/${hub.id}/invite`}>
+              <Link href={`/hub/${hub.uuid}/invite`}>
                 <Button className="gap-2">
                   <UserPlus className="h-4 w-4" />
                   Invite to hub
                 </Button>
               </Link>
-              <Link href={`/hub/${hub.id}/rosters/new`}>
+              <Link href={`/hub/${hub.uuid}/rosters/new`}>
                 <Button variant="outline" className="gap-2">
                   <Plus className="h-4 w-4" />
                   Create roster
@@ -356,7 +307,7 @@ export default async function HubDashboard({
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-medium">Rosters</h2>
             <Link
-              href={`/hub/${hub.id}/rosters`}
+              href={`/hub/${hub.uuid}/rosters`}
               className="text-sm text-muted-foreground hover:underline"
             >
               View all
@@ -365,7 +316,7 @@ export default async function HubDashboard({
 
           <div className="space-y-3">
             {(hub.rosters ?? []).map((r) => (
-              <Link key={r.id} href={`/hub/${hub.id}/rosters/${r.id}`}>
+              <Link key={r.id} href={`/hub/${hub.uuid}/rosters/${r.id}`}>
                 <div className="group flex items-center justify-between rounded-xl border bg-card px-4 py-3 shadow-sm transition hover:shadow">
                   <div className="flex items-center gap-3">
                     <div
@@ -376,7 +327,7 @@ export default async function HubDashboard({
                     <div>
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium">{r.name}</p>
-                        {r.isLocked && (
+                        {r.isPrivate && (
                           <Lock className="h-3.5 w-3.5 opacity-60" />
                         )}
                       </div>
@@ -396,7 +347,7 @@ export default async function HubDashboard({
             ))}
 
             {/* Create roster dashed card */}
-            <Link href={`/hub/${hub.id}/rosters/new`}>
+            <Link href={`/hub/${hub.uuid}/rosters/new`}>
               <div className="flex items-center justify-center gap-2 rounded-xl border border-dashed bg-background/60 px-4 py-6 text-sm text-muted-foreground hover:bg-background">
                 <Plus className="h-4 w-4" /> Create a roster
               </div>
@@ -409,7 +360,7 @@ export default async function HubDashboard({
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-medium">Hub mates ({memberCount})</h2>
             <Link
-              href={`/hub/${hub.id}/members`}
+              href={`/hub/${hub.uuid}/members`}
               className="text-sm text-muted-foreground hover:underline"
             >
               View all
@@ -418,22 +369,22 @@ export default async function HubDashboard({
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {hub.members.slice(0, 3).map((m) => {
-              const full = `${m.user.firstName} ${m.user.lastName}`;
+              const fullName = `${m.user.firstName} ${m.user.lastName}`;
               return (
-                <Card key={m.id} className="rounded-2xl">
+                <Card key={m.uuid} className="rounded-2xl">
                   <CardContent className="p-5">
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-12 w-12">
+                      <Avatar className="h-12 w-12 shrink-0">
                         <AvatarImage src={m.user.avatarUrl || ""} />
                         <AvatarFallback>
-                          <Initials name={full} />
+                          <Initials name={fullName} />
                         </AvatarFallback>
                       </Avatar>
-                      <div>
-                        <p className="text-sm font-medium leading-tight">
-                          {full}
+                      <div className="truncate">
+                        <p className="text-sm font-medium leading-tight truncate">
+                          {fullName}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground truncate">
                           {m.user.email}
                         </p>
                       </div>
@@ -447,8 +398,8 @@ export default async function HubDashboard({
             })}
 
             {/* Add member */}
-            <Link href={`/hub/${hub.id}/invite`}>
-              <div className="grid place-items-center rounded-2xl border border-dashed bg-background/60 p-6 hover:bg-background">
+            <Link href={`/hub/${hub.uuid}/invite`}>
+              <div className="grid place-items-center h-full rounded-2xl border border-dashed bg-background/60 p-6 hover:bg-background">
                 <div className="flex flex-col items-center gap-3">
                   <div
                     className={`grid h-10 w-10 place-items-center rounded-full ${theme.softBg}`}
@@ -483,7 +434,7 @@ export default async function HubDashboard({
                   <div className="text-sm">
                     <p className="font-medium">{a.title || "Activity"}</p>
                     <p className="text-xs text-muted-foreground">
-                      {a.subtitle || a.description}
+                      {a.body || a.title}
                     </p>
                   </div>
                 </div>
