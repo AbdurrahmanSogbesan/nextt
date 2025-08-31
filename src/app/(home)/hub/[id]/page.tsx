@@ -10,10 +10,17 @@ import {
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Info, Lock, Plus, UserPlus } from "lucide-react";
+import {
+  Activity,
+  ClipboardList,
+  Info,
+  Lock,
+  Plus,
+  UserPlus,
+} from "lucide-react";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
+import { cn, getFormattedDate } from "@/lib/utils";
 
 // Map your saved hub.theme to utility classes.
 // Tailwind cannot read dynamic class names, so keep this mapping in code.
@@ -103,6 +110,60 @@ function AvatarStack({
           +{extra}
         </div>
       )}
+    </div>
+  );
+}
+
+function TurnCard({
+  title,
+  className,
+  image,
+  rightText,
+  badgeText,
+  isActive,
+  theme,
+}: {
+  title: string;
+  className?: string;
+  image?: string;
+  rightText?: string;
+  badgeText?: string;
+  isActive?: boolean;
+  theme?: ReturnType<typeof accent>;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between rounded-xl border px-4 py-3 transition-all",
+        className,
+        isActive && `${theme?.chip} border-transparent`
+      )}
+    >
+      <div className="text-sm font-medium">{title}</div>
+
+      <div className="flex items-center gap-2">
+        {rightText && (
+          <span
+            className={cn(
+              "text-xs text-muted-foreground",
+              isActive && theme?.text
+            )}
+          >
+            {rightText}
+          </span>
+        )}
+        {image && (
+          <Avatar className="h-6 w-6">
+            <AvatarImage src={image} />
+            <AvatarFallback>ME</AvatarFallback>
+          </Avatar>
+        )}
+        {badgeText && (
+          <Badge variant="outline" className={`${theme?.chip}`}>
+            {badgeText}
+          </Badge>
+        )}
+      </div>
     </div>
   );
 }
@@ -200,7 +261,22 @@ export default async function HubDashboard({
   const theme = accent(hub.theme || "indigo");
 
   const memberCount = hub.members.length;
+
   const rosterCount = hub.rosters?.length ?? 0;
+
+  const hasRosters = rosterCount > 0;
+  const firstRoster = hub.rosters?.[0];
+
+  function getTurnInfo(turnId: string | null) {
+    // turn id is user reference
+    if (!turnId) return { name: "Unknown", avatarUrl: "", isMe: false };
+    const user = getUserInfo(turnId);
+    return {
+      name: user.firstName + " " + user.lastName,
+      avatarUrl: user.avatarUrl,
+      isMe: turnId === userId,
+    };
+  }
 
   return (
     <div className="min-h-screen">
@@ -245,7 +321,6 @@ export default async function HubDashboard({
                 <CardDescription>Hub mates</CardDescription>
                 <CardTitle className="text-3xl">{memberCount}</CardTitle>
               </CardHeader>
-              <div className={`h-1 w-full ${theme.solidBg}`} />
             </Card>
 
             <Card className="overflow-hidden">
@@ -253,7 +328,6 @@ export default async function HubDashboard({
                 <CardDescription>Rosters</CardDescription>
                 <CardTitle className="text-3xl">{rosterCount}</CardTitle>
               </CardHeader>
-              <div className={`h-1 w-full ${theme.solidBg}`} />
             </Card>
           </div>
         </div>
@@ -261,46 +335,46 @@ export default async function HubDashboard({
 
       <main className="mx-auto w-full max-w-6xl px-4 py-8 space-y-10">
         {/* Tasks strip - placeholder chips you can wire to tasks */}
-        <section className="space-y-3">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-medium">Tasks breakdown</h2>
-            <Badge variant="secondary" className="gap-1 text-xs">
-              <Info className="h-3.5 w-3.5" /> Info
-            </Badge>
-          </div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <div className="flex items-center justify-between rounded-xl border bg-background/80 px-4 py-3">
-              <div className="text-sm font-medium">Current</div>
-              <Avatar className="h-6 w-6">
-                <AvatarFallback>ME</AvatarFallback>
-              </Avatar>
-            </div>
-            <div className="flex items-center justify-between rounded-xl border bg-background/80 px-4 py-3">
-              <div className="text-sm font-medium">Due date</div>
-              <Badge variant="outline" className={`${theme.chip}`}>
-                Tomorrow
+        {hasRosters && (
+          <section className="space-y-3">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-medium">
+                Tasks breakdown for {firstRoster?.name}
+              </h2>
+              <Badge variant="secondary" className="gap-1 text-xs">
+                <Info className="h-3.5 w-3.5" /> Info
               </Badge>
             </div>
-            <div
-              className={`flex items-center justify-between rounded-xl border px-4 py-3 ${theme.softBg}`}
-            >
-              <div className="text-sm font-medium">Next</div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Me</span>
-                <AvatarStack
-                  people={hub.members.slice(0, 3).map((m) => ({
-                    name: `${m.user.firstName} ${m.user.lastName}`,
-                    avatarUrl: m.user.avatarUrl,
-                  }))}
-                />
-              </div>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+              <TurnCard
+                title="Current"
+                rightText={
+                  getTurnInfo(firstRoster.currentTurnId).isMe
+                    ? "Me"
+                    : getTurnInfo(firstRoster.currentTurnId).name
+                }
+                image={getTurnInfo(firstRoster.currentTurnId).avatarUrl}
+                theme={theme}
+              />
+              <TurnCard
+                title="Due Date"
+                badgeText={getFormattedDate(firstRoster?.nextDate)}
+                theme={theme}
+              />
+              <TurnCard
+                title="Next"
+                rightText={
+                  getTurnInfo(firstRoster.nextTurnId).isMe
+                    ? "Me"
+                    : getTurnInfo(firstRoster.nextTurnId).name
+                }
+                image={getTurnInfo(firstRoster.nextTurnId).avatarUrl}
+                theme={theme}
+                isActive
+              />
             </div>
-            <div className="flex items-center justify-between rounded-xl border bg-background/80 px-4 py-3">
-              <div className="text-sm font-medium">Overdue</div>
-              <Badge variant="secondary">0</Badge>
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* Rosters */}
         <section className="space-y-3">
@@ -315,36 +389,54 @@ export default async function HubDashboard({
           </div>
 
           <div className="space-y-3">
-            {(hub.rosters ?? []).map((r) => (
-              <Link key={r.id} href={`/hub/${hub.uuid}/rosters/${r.id}`}>
-                <div className="group flex items-center justify-between rounded-xl border bg-card px-4 py-3 shadow-sm transition hover:shadow">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`grid h-9 w-9 place-items-center rounded-xl ${theme.softBg} ring-1 ring-border`}
-                    >
-                      <span className="h-2 w-2 rounded-full bg-current" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium">{r.name}</p>
-                        {r.isPrivate && (
-                          <Lock className="h-3.5 w-3.5 opacity-60" />
-                        )}
+            {hub.rosters.length > 0 ? (
+              hub.rosters.slice(0, 3).map((r) => (
+                <Link key={r.id} href={`/hub/${hub.uuid}/rosters/${r.id}`}>
+                  <div className="group flex items-center justify-between rounded-xl border bg-card px-4 py-3 shadow-sm transition hover:shadow">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`grid h-9 w-9 place-items-center rounded-xl ${theme.softBg} ring-1 ring-border`}
+                      >
+                        <span className="h-2 w-2 rounded-full bg-current" />
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {r.members.length} members
-                      </p>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium">{r.name}</p>
+                          {r.isPrivate && (
+                            <Lock className="h-3.5 w-3.5 opacity-60" />
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {r.members.length} members
+                        </p>
+                      </div>
                     </div>
+                    <AvatarStack
+                      people={r.members.map((m) => ({
+                        name: `${m.user.firstName} ${m.user.lastName}`,
+                        avatarUrl: m.user.avatarUrl,
+                      }))}
+                    />
                   </div>
-                  <AvatarStack
-                    people={r.members.map((m) => ({
-                      name: `${m.user.firstName} ${m.user.lastName}`,
-                      avatarUrl: m.user.avatarUrl,
-                    }))}
-                  />
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))
+            ) : (
+              <div className="w-full flex flex-col items-center gap-6 py-8">
+                <ClipboardList
+                  className="h-24 w-24 text-muted-foreground/80"
+                  strokeWidth={1}
+                />
+                <span className="font-medium text-muted-foreground">
+                  You don&apos;t belong to any Roster yet...{" "}
+                  <Link
+                    href={`/hub/${hub.uuid}/rosters/new`}
+                    className="text-primary hover:underline"
+                  >
+                    Create here
+                  </Link>
+                </span>
+              </div>
+            )}
 
             {/* Create roster dashed card */}
             <Link href={`/hub/${hub.uuid}/rosters/new`}>
@@ -417,49 +509,51 @@ export default async function HubDashboard({
         <section className="space-y-3">
           <h2 className="text-lg font-medium">Activities</h2>
           <div className="space-y-3">
-            {(hub.activities ?? []).map((a) => (
-              <div
-                key={a.id}
-                className="flex items-center justify-between rounded-xl border bg-card px-4 py-3"
-              >
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-9 w-9">
-                    <AvatarImage src={a.actor?.avatarUrl || ""} />
-                    <AvatarFallback>
-                      <Initials
-                        name={`${a.actor?.firstName} ${a.actor?.lastName}`}
-                      />
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="text-sm">
-                    <p className="font-medium">{a.title || "Activity"}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {a.body || a.title}
-                    </p>
+            {hub.activities.length > 0 ? (
+              hub.activities.map((a) => (
+                <div
+                  key={a.id}
+                  className="flex items-center justify-between rounded-xl border bg-card px-4 py-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={a.actor?.avatarUrl || ""} />
+                      <AvatarFallback>
+                        <Initials
+                          name={`${a.actor?.firstName} ${a.actor?.lastName}`}
+                        />
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="text-sm">
+                      <p className="font-medium">{a.title || "Activity"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {a.body || a.title}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(a.createdAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </div>
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  {new Date(a.createdAt).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </div>
+              ))
+            ) : (
+              <div className="w-full flex flex-col items-center gap-6 py-8">
+                <Activity
+                  className="h-24 w-24 text-muted-foreground/80"
+                  strokeWidth={1}
+                />
+                <span className="font-medium text-muted-foreground text-center">
+                  No activity yet.
+                  <br />
+                  Create a roster or invite a member to get things moving.
+                </span>
               </div>
-            ))}
-
-            {/* Empty state */}
-            {(!hub.activities || hub.activities.length === 0) && (
-              <Card>
-                <CardContent className="p-6 text-sm text-muted-foreground">
-                  No activity yet. Create a roster or invite a member to get
-                  things moving.
-                </CardContent>
-              </Card>
             )}
           </div>
         </section>
-
-        <Separator className="my-6" />
       </main>
     </div>
   );
