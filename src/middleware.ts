@@ -7,6 +7,12 @@ const isPublicRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
+  const { pathname } = request.nextUrl;
+
+  if (pathname.startsWith('/api/uploadthing')) {
+    return;
+  }
+
   if (!isPublicRoute(request)) {
     await auth.protect();
   }
