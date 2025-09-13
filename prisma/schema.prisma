@@ -72,21 +72,22 @@ enum TURN_STATUS_CHOICE {
 // }
 
 model Hub {
-  id            Int               @id @default(autoincrement())
-  uuid          String            @unique @default(uuid())
-  name          String            @db.VarChar(256)
-  logo          String?           @db.VarChar(400)
-  theme         String?           @db.VarChar(50)
-  visibility    VISIBILITY_CHOICE @default(PUBLIC)
-  description   String?           @default("")
-  ownerId       String?
-  slug          String            @unique @db.VarChar(256)
-  rosters       Roster[]
-  members       HubMembership[]
-  activities    Activity[]
-  notifications Notification[]
-  invitesSent   Invite[]
-  isDeleted     Boolean           @default(false)
+  id               Int               @id @default(autoincrement())
+  uuid             String            @unique @default(uuid())
+  name             String            @db.VarChar(256)
+  logo             String?           @db.VarChar(400)
+  theme            String?           @db.VarChar(50)
+  visibility       VISIBILITY_CHOICE @default(PUBLIC)
+  description      String?           @default("")
+  ownerId          String?
+  slug             String            @unique @db.VarChar(256)
+  rosters          Roster[]
+  members          HubMembership[]
+  activities       Activity[]
+  notifications    Notification[]
+  invitesSent      Invite[]
+  isDeleted        Boolean           @default(false)
+  lastVisitedUsers String[]
 }
 
 model HubMembership {

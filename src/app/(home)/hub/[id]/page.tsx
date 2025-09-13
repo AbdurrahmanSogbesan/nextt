@@ -258,6 +258,41 @@ export default async function HubDashboard({
   const isMember = hub.members.some((m) => m.hubUserid === userId);
   if (!isMember && hub.visibility === "PRIVATE") notFound();
 
+  // Update lastVisitedUsers: ensure user is only in this hub's lastVisitedUsers
+  if (!hub.lastVisitedUsers?.includes(userId)) {
+    // Get all hubs where user is currently in lastVisitedUsers
+    const hubsWithUser = await prisma.hub.findMany({
+      where: { lastVisitedUsers: { has: userId } },
+      select: { id: true, lastVisitedUsers: true },
+    });
+
+    const updates = [
+      // Add user to current hub
+      prisma.hub.update({
+        where: { id: hub.id },
+        data: { lastVisitedUsers: { push: userId } },
+      }),
+    ];
+
+    // Remove user from all other hubs
+    hubsWithUser
+      .filter((h) => h.id !== hub.id)
+      .forEach((otherHub) => {
+        updates.push(
+          prisma.hub.update({
+            where: { id: otherHub.id },
+            data: {
+              lastVisitedUsers: {
+                set: otherHub.lastVisitedUsers.filter((id) => id !== userId),
+              },
+            },
+          })
+        );
+      });
+
+    await prisma.$transaction(updates);
+  }
+
   const theme = accent(hub.theme || "indigo");
 
   const memberCount = hub.members.length;
