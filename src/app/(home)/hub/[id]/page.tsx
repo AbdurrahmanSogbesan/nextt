@@ -178,26 +178,24 @@ export default async function HubDashboard({
 
   if (!userId) redirect("/sign-in");
 
-  const hubSkeleton = await prisma.hub
+  const dbhub = await prisma.hub
     .findUnique({
       where: { uuid: id },
       include: {
         members: { orderBy: { dateJoined: "desc" } },
         rosters: {
           include: { members: true },
-          take: 10,
         },
         activities: {
           orderBy: { createdAt: "desc" },
-          take: 8,
         },
       },
     })
     .catch(() => null);
 
   const uniqueIds = new Set([
-    ...(hubSkeleton?.members.map((m) => m.hubUserid) || []),
-    ...(hubSkeleton?.rosters.flatMap((ros) =>
+    ...(dbhub?.members.map((m) => m.hubUserid) || []),
+    ...(dbhub?.rosters.flatMap((ros) =>
       ros.members.map((rom) => rom.rosterUserId)
     ) || []),
   ]);
@@ -232,14 +230,14 @@ export default async function HubDashboard({
 
   // Enrich hub data with user information
   const hub = {
-    ...hubSkeleton,
+    ...dbhub,
     members:
-      hubSkeleton?.members.map((member) => ({
+      dbhub?.members.map((member) => ({
         ...member,
         user: getUserInfo(member.hubUserid),
       })) || [],
     rosters:
-      hubSkeleton?.rosters.map((roster) => ({
+      dbhub?.rosters.map((roster) => ({
         ...roster,
         members: roster.members.map((member) => ({
           ...member,
@@ -247,7 +245,7 @@ export default async function HubDashboard({
         })),
       })) || [],
     activities:
-      hubSkeleton?.activities.map((activity) => ({
+      dbhub?.activities.map((activity) => ({
         ...activity,
         actor: activity.actorId ? getUserInfo(activity.actorId) : null,
       })) || [],
@@ -545,7 +543,8 @@ export default async function HubDashboard({
           <h2 className="text-lg font-medium">Activities</h2>
           <div className="space-y-3">
             {hub.activities.length > 0 ? (
-              hub.activities.map((a) => (
+              // todo: add load more button
+              hub.activities.slice(0, 5).map((a) => (
                 <div
                   key={a.id}
                   className="flex items-center justify-between rounded-xl border bg-card px-4 py-3"
