@@ -18,6 +18,7 @@ export default function MemberCard({
   btnText,
   onBtnClick,
   dropdownItems,
+  role,
 }: {
   member: { user: MemberUserDetails };
   btnText?: string;
@@ -27,6 +28,7 @@ export default function MemberCard({
     onClick: VoidFunction;
     variant?: "default" | "destructive";
   }>;
+  role?: "ADMIN" | "MEMBER";
 }) {
   const fullName = `${member.user.firstName} ${member.user.lastName}`;
   return (
@@ -64,17 +66,24 @@ export default function MemberCard({
             <Initials name={fullName} />
           </AvatarFallback>
         </Avatar>
-        <div className="truncate">
+        <div className="truncate flex flex-col items-center">
           <p className="text-sm font-medium leading-tight truncate">
             {fullName}
           </p>
           <p className="text-xs text-muted-foreground truncate">
             {member.user.email}
           </p>
+          {role && (
+            <p className="text-xs text-muted-foreground/80 capitalize">
+              {role.toLowerCase()}
+            </p>
+          )}
         </div>
-        <Button variant="secondary" className="w-full" onClick={onBtnClick}>
-          {btnText}
-        </Button>
+        {btnText && (
+          <Button variant="secondary" className="w-full" onClick={onBtnClick}>
+            {btnText}
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

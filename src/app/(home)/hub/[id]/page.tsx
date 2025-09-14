@@ -1,4 +1,4 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { notFound, redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +25,7 @@ import { accent } from "@/lib/theme";
 import TurnCard from "@/components/TurnCard";
 import AvatarStack from "@/components/AvatarStack";
 import Initials from "@/components/Initials";
+import { createUserMap, getUserInfo } from "@/lib/user-utils";
 
 export default async function HubDashboard({
   params,
@@ -58,33 +59,7 @@ export default async function HubDashboard({
     ) || []),
   ]);
 
-  const client = await clerkClient();
-
-  const { data: usersData } = await client.users.getUserList({
-    userId: Array.from(uniqueIds),
-  });
-
-  // Create user map for quick lookups
-  const userMap = new Map(
-    usersData.map((user) => [
-      user.id,
-      {
-        firstName: user.firstName || "",
-        lastName: user.lastName || "",
-        email: user.emailAddresses[0]?.emailAddress || "",
-        avatarUrl: user.imageUrl,
-      },
-    ])
-  );
-
-  // Helper function to get user info or fallback
-  const getUserInfo = (userId: string) =>
-    userMap.get(userId) || {
-      firstName: "Unknown",
-      lastName: "User",
-      email: "",
-      avatarUrl: "",
-    };
+  const userMap = await createUserMap(Array.from(uniqueIds));
 
   // Enrich hub data with user information
   const hub = {
@@ -92,20 +67,20 @@ export default async function HubDashboard({
     members:
       dbhub?.members.map((member) => ({
         ...member,
-        user: getUserInfo(member.hubUserid),
+        user: getUserInfo(userMap, member.hubUserid),
       })) || [],
     rosters:
       dbhub?.rosters.map((roster) => ({
         ...roster,
         members: roster.members.map((member) => ({
           ...member,
-          user: getUserInfo(member.rosterUserId),
+          user: getUserInfo(userMap, member.rosterUserId),
         })),
       })) || [],
     activities:
       dbhub?.activities.map((activity) => ({
         ...activity,
-        actor: activity.actorId ? getUserInfo(activity.actorId) : null,
+        actor: activity.actorId ? getUserInfo(userMap, activity.actorId) : null,
       })) || [],
   };
 
@@ -161,7 +136,7 @@ export default async function HubDashboard({
   function getTurnInfo(turnId: string | null) {
     // turn id is user reference
     if (!turnId) return { name: "Unknown", avatarUrl: "", isMe: false };
-    const user = getUserInfo(turnId);
+    const user = getUserInfo(userMap, turnId);
     return {
       name: user.firstName + " " + user.lastName,
       avatarUrl: user.avatarUrl,
@@ -177,7 +152,7 @@ export default async function HubDashboard({
           <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
             <div>
               <p className="text-sm text-muted-foreground">
-                Welcome back, {getUserInfo(userId).firstName}
+                Welcome back, {getUserInfo(userMap, userId).firstName}
               </p>
               <h1 className="text-3xl font-semibold tracking-tight">
                 {hub.name}
