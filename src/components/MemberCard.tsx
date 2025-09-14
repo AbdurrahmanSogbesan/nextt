@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User } from "@/types";
+import { MemberUserDetails } from "@/types";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -19,7 +19,7 @@ export default function MemberCard({
   onBtnClick,
   dropdownItems,
 }: {
-  member: { user: User };
+  member: { user: MemberUserDetails };
   btnText?: string;
   onBtnClick?: VoidFunction;
   dropdownItems?: Array<{
