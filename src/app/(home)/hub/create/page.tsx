@@ -29,6 +29,9 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import Image from "next/image";
 import { createHubSchema } from "@/lib/schemas";
+import { apiPost } from "@/lib/api";
+import { toast } from "sonner";
+import { useMutation } from "@tanstack/react-query";
 
 type Values = z.infer<typeof createHubSchema>;
 
@@ -55,19 +58,25 @@ export default function NewHubPage() {
     },
   });
 
+  const { mutate: createHub, isPending: isCreatingHub } = useMutation({
+    mutationKey: ["createHub"],
+    mutationFn: async (values: Values) => {
+      const { id } = await apiPost<{ id: string }>("/api/hubs", values);
+      return id;
+    },
+    onSuccess: (id) => {
+      router.push(`/hub/${id}`);
+    },
+    onError: (error) => {
+      console.error("Error creating hub:", error);
+      toast.error("Failed to create hub", {
+        description: "Please try again",
+      });
+    },
+  });
+
   async function onSubmit(values: Values) {
-    const res = await fetch("/api/hubs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
-    });
-    if (!res.ok) {
-      const t = await res.text();
-      alert("Failed to create hub: " + t);
-      return;
-    }
-    const { id } = await res.json();
-    router.push(`/hub/${id}`);
+    createHub(values);
   }
 
   const themeValue = form.watch("theme");
@@ -228,7 +237,9 @@ export default function NewHubPage() {
                       >
                         Cancel
                       </Button>
-                      <Button type="submit">Create hub</Button>
+                      <Button disabled={isCreatingHub} type="submit">
+                        Create hub
+                      </Button>
                     </div>
                   </CardFooter>
                 </form>
