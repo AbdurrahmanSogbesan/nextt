@@ -58,9 +58,7 @@ export default function NewHubPage() {
   });
 
   async function onSubmit(values: Values) {
-    const { id } = await apiPost<{ id: string }>("/api/hubs", {
-      values,
-    });
+    const { id } = await apiPost<{ id: string }>("/api/hubs", values);
     if (!id) {
       toast.error("Failed to create hub");
       return;

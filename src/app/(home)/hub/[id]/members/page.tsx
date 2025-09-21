@@ -13,7 +13,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { apiGet, apiPatch } from "@/lib/api";
 import { updateHubMemberRoleSchema } from "@/lib/schemas";
-import z from "zod";
+import { z } from "zod";
 import { useParams } from "next/navigation";
 import Loading from "@/components/Loading";
 
