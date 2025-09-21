@@ -7,10 +7,10 @@ import { createUserMap, getUserInfo } from "@/lib/user-utils";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: hubUuid } = params;
+    const { id: hubUuid } = await params;
     const { userId } = await auth();
 
     if (!userId) {
@@ -128,10 +128,10 @@ export async function PATCH(
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const dbhub = await prisma.hub.findUnique({
       where: { uuid: id },
