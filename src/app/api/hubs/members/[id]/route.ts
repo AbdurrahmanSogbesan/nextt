@@ -138,11 +138,15 @@ export async function GET(
       include: { members: { where: { isDeleted: { equals: false } } } },
     });
 
+    if (!dbhub) {
+      return NextResponse.json({ error: "Hub not found" }, { status: 404 });
+    }
+
     const uniqueIds = new Set(dbhub?.members.map((m) => m.hubUserid));
 
     const userMap = await createUserMap(Array.from(uniqueIds));
 
-    const members = dbhub?.members.map((m) => ({
+    const members = (dbhub?.members ?? []).map((m) => ({
       ...m,
       user: getUserInfo(userMap, m.hubUserid),
     }));
