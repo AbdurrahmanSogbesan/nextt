@@ -19,6 +19,7 @@ export default function MemberCard({
   onBtnClick,
   dropdownItems,
   role,
+  isUser,
 }: {
   member: { user: MemberUserDetails };
   btnText?: string;
@@ -29,6 +30,7 @@ export default function MemberCard({
     variant?: "default" | "destructive";
   }>;
   role?: "ADMIN" | "MEMBER";
+  isUser?: boolean;
 }) {
   const fullName = `${member.user.firstName} ${member.user.lastName}`;
   return (
@@ -68,7 +70,7 @@ export default function MemberCard({
         </Avatar>
         <div className="truncate flex flex-col items-center">
           <p className="text-sm font-medium leading-tight truncate">
-            {fullName}
+            {fullName} {isUser && <span className="text-xs">(Me)</span>}
           </p>
           <p className="text-xs text-muted-foreground truncate">
             {member.user.email}

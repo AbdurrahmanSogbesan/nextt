@@ -29,6 +29,8 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import Image from "next/image";
 import { createHubSchema } from "@/lib/schemas";
+import { apiPost } from "@/lib/api";
+import { toast } from "sonner";
 
 type Values = z.infer<typeof createHubSchema>;
 
@@ -56,17 +58,13 @@ export default function NewHubPage() {
   });
 
   async function onSubmit(values: Values) {
-    const res = await fetch("/api/hubs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
+    const { id } = await apiPost<{ id: string }>("/api/hubs", {
+      values,
     });
-    if (!res.ok) {
-      const t = await res.text();
-      alert("Failed to create hub: " + t);
+    if (!id) {
+      toast.error("Failed to create hub");
       return;
     }
-    const { id } = await res.json();
     router.push(`/hub/${id}`);
   }
 

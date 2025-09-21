@@ -3,6 +3,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 
 import "./globals.css";
 import Providers from "./providers";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "Nextt",
@@ -19,6 +20,7 @@ export default function RootLayout({
       <html lang="en">
         <body className="bg-[radial-gradient(50%_120%_at_50%_-10%,rgba(99,102,241,0.12),transparent),linear-gradient(to_bottom,transparent,transparent)]">
           <Providers>{children}</Providers>
+          <Toaster />
         </body>
       </html>
     </ClerkProvider>

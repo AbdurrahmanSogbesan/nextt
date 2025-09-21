@@ -9,3 +9,8 @@ export const createHubSchema = z.object({
   visibility: z.enum(VISIBILITY_CHOICE),
   description: z.string().max(500).optional(),
 });
+
+export const updateHubMemberRoleSchema = z.object({
+  isAdmin: z.boolean(),
+  memberUserId: z.string().min(1, "Member user ID is required"),
+});
