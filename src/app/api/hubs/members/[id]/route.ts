@@ -3,7 +3,8 @@ import { z } from "zod";
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { updateHubMemberRoleSchema } from "@/lib/schemas";
-import { createUserMap, getUserInfo } from "@/lib/user-utils";
+import { createUserMap } from "@/lib/clerk-utils";
+import { getUserInfo } from "@/lib/utils";
 
 export async function PATCH(
   req: Request,

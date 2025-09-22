@@ -1,3 +1,4 @@
+import { MemberUserDetails } from "@/types";
 import { clsx, type ClassValue } from "clsx";
 import { format, isToday, isTomorrow, isYesterday } from "date-fns";
 import { twMerge } from "tailwind-merge";
@@ -15,4 +16,21 @@ export function getFormattedDate(date: string | number | Date | null) {
   if (isTomorrow(inputDate)) return "Tomorrow";
 
   return format(inputDate, "do MMM, yyyy");
+}
+
+/**
+ * Gets user info from the user map or returns a fallback
+ */
+export function getUserInfo(
+  userMap: Map<string, MemberUserDetails>,
+  userId: string
+): MemberUserDetails {
+  return (
+    userMap.get(userId) || {
+      firstName: "Unknown",
+      lastName: "User",
+      email: "",
+      avatarUrl: "",
+    }
+  );
 }

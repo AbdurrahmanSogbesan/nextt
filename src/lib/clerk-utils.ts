@@ -29,20 +29,3 @@ export async function createUserMap(
     ])
   );
 }
-
-/**
- * Gets user info from the user map or returns a fallback
- */
-export function getUserInfo(
-  userMap: Map<string, MemberUserDetails>,
-  userId: string
-): MemberUserDetails {
-  return (
-    userMap.get(userId) || {
-      firstName: "Unknown",
-      lastName: "User",
-      email: "",
-      avatarUrl: "",
-    }
-  );
-}

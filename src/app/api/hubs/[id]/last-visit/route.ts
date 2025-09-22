@@ -2,10 +2,6 @@ import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-/**
- * POST /api/hubs/[id]/visit
- * Updates lastVisitedUsers for a hub - adds user to current hub and removes from others
- */
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }

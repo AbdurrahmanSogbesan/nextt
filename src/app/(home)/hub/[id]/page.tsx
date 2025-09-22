@@ -31,18 +31,19 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiGet, apiPost } from "@/lib/api";
 import Loading from "@/components/Loading";
 import { useEffect } from "react";
-import { MemberUserDetails } from "@/types";
+import { getUserInfo } from "@/lib/utils";
 
 export default function HubDashboard() {
   const { userId } = useAuth();
   const { id } = useParams<{ id: string }>();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["hub", id],
+    queryKey: ["getHub", id],
     queryFn: () => apiGet<GetHubResponse>(`/api/hubs/${id}`),
   });
 
   const { mutate: updateVisitStatus } = useMutation({
+    mutationKey: ["updateVisitStatus", id],
     mutationFn: () => apiPost(`/api/hubs/${id}/last-visit`),
     onError: (error) => {
       console.error("Failed to update visit status:", error);
@@ -64,7 +65,7 @@ export default function HubDashboard() {
 
   if (isLoading) return <Loading />;
 
-  if (!hub) return notFound();
+  if (!hub || !userId) return notFound();
 
   // Convert Record back to Map for getUserInfo function
   const userMap = userMapRecord
@@ -102,7 +103,7 @@ export default function HubDashboard() {
           <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
             <div>
               <p className="text-sm text-muted-foreground">
-                Welcome back, {getUserInfo(userMap, userId || "").firstName}
+                Welcome back, {getUserInfo(userMap, userId).firstName}
               </p>
               <h1 className="text-3xl font-semibold tracking-tight">
                 {hub.name}
@@ -355,19 +356,5 @@ export default function HubDashboard() {
         </section>
       </main>
     </div>
-  );
-}
-
-function getUserInfo(
-  userMap: Map<string, MemberUserDetails>,
-  userId: string
-): MemberUserDetails {
-  return (
-    userMap.get(userId) || {
-      firstName: "Unknown",
-      lastName: "User",
-      email: "",
-      avatarUrl: "",
-    }
   );
 }
