@@ -110,6 +110,7 @@ model Roster {
   description             String?            @default("")
   isPrivate               Boolean            @default(false)
   enablePushNotifications Boolean            @default(true)
+  emailNotificationIsEnabled Boolean         @default(false)
   start                   DateTime           @db.Timestamptz(3)
   end                     DateTime           @db.Timestamptz(3)
   rotationType            ROTATION_CHOICE?
