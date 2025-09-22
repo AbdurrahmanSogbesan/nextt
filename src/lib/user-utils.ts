@@ -1,5 +1,6 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import { MemberUserDetails } from "@/types";
+// note: server only
 
 /**
  * Fetches user data from Clerk and creates a user map

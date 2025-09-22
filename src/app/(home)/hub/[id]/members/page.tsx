@@ -3,9 +3,12 @@
 import MemberCard from "@/components/MemberCard";
 import ConfirmationModal from "@/components/ConfirmationModal";
 import { Button } from "@/components/ui/button";
-import { MemberUserDetails } from "@/types";
+import {
+  GetHubMembersResponse,
+  HubMember,
+  UpdateMemberRoleResponse,
+} from "@/types/hub";
 import { useAuth } from "@clerk/nextjs";
-import { Hub, HubMembership, Prisma } from "@prisma/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { UserPlus } from "lucide-react";
 import Link from "next/link";
@@ -17,28 +20,12 @@ import { z } from "zod";
 import { useParams } from "next/navigation";
 import Loading from "@/components/Loading";
 
-type HubMembers = Prisma.HubGetPayload<{
-  include: {
-    members: true;
-  };
-}>["members"][number] & { user: MemberUserDetails };
-
-type UpdateMemberRoleResponse = {
-  membership: Pick<HubMembership, "hubUserid" | "isAdmin" | "dateJoined">;
-};
-
-type GetHubMembersResponse = {
-  hub: Hub;
-  members: HubMembers[];
-};
-
 export default function HubMembersPage() {
   const { id } = useParams<{ id: string }>();
 
   const { userId } = useAuth();
   const queryClient = useQueryClient();
 
-  // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalConfig, setModalConfig] = useState<{
     title: string;
@@ -68,7 +55,6 @@ export default function HubMembersPage() {
         return resp.membership;
       },
       onSuccess: () => {
-        // Invalidate and refetch the hub members query
         queryClient.invalidateQueries({ queryKey: ["getHubMembers", id] });
         toast.success("Member role updated successfully");
         setIsModalOpen(false);
@@ -87,21 +73,15 @@ export default function HubMembersPage() {
       },
     });
 
-  // Helper function to show confirmation modal
   const showConfirmationModal = (config: typeof modalConfig) => {
     setModalConfig(config);
     setIsModalOpen(true);
   };
 
-  // Handle role change
-  const handleRoleChange = (
-    member: HubMembers,
-    newRole: "ADMIN" | "MEMBER"
-  ) => {
+  const handleRoleChange = (member: HubMember, newRole: "ADMIN" | "MEMBER") => {
     const isAdmin = newRole === "ADMIN";
     const currentRole = member.isAdmin ? "ADMIN" : "MEMBER";
 
-    // Don't show modal if role is already the same
     if (currentRole === newRole) {
       toast.error("Role is already the same");
       return;
@@ -130,8 +110,7 @@ export default function HubMembersPage() {
     });
   };
 
-  // Handle member removal
-  const handleRemoveMember = (member: HubMembers) => {
+  const handleRemoveMember = (member: HubMember) => {
     if (member.hubUserid === userId) {
       toast.error("You cannot remove yourself from the hub");
       return;
