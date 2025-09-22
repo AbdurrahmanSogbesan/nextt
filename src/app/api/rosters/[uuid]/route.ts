@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { patchRosterSchema } from "@/lib/schemas";
+import z from "zod";
 
 
 async function assertAdmin(rosterId: number, userId: string) {
@@ -58,7 +58,7 @@ export async function PATCH(
       }
     }
 
-    const updatePayload: any = {
+    const updatePayload = {
       ...(data.name !== undefined && { name: data.name }),
       ...(data.description !== undefined && { description: data.description }),
       ...(data.rotationChoice !== undefined && { rotationType: data.rotationChoice }),
@@ -80,34 +80,35 @@ export async function PATCH(
     });
 
     return NextResponse.json({ id: updated.uuid });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error updating roster:", error);
-
+    
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Invalid request data", details: error.flatten() },
         { status: 400 }
       );
     }
-
-    const status = typeof error?.status === "number" ? error.status : 500;
-    const message = status === 403 ? "Forbidden" : "Failed to update roster";
-    return NextResponse.json({ error: message }, { status });
+    return NextResponse.json(
+      { error: "Failed to update roster" },
+      { status: 500 }
+    );
   }
 }
 
+
 export async function DELETE(
   _req: Request,
-  { params }: { params: { uuid: string } }
+  context: { params: Promise<{ uuid: string }> }
 ) {
   try {
     const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
+    const { uuid } = await context.params; 
     const roster = await prisma.roster.findUnique({
-      where: { uuid: params.uuid },
+      where: { uuid: uuid },
       select: { id: true, isDeleted: true },
     });
 
@@ -123,11 +124,12 @@ export async function DELETE(
     });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error deleting roster:", error);
 
-    const status = typeof error?.status === "number" ? error.status : 500;
-    const message = status === 403 ? "Forbidden" : "Failed to delete roster";
-    return NextResponse.json({ error: message }, { status });
+    return NextResponse.json(
+      { error: "Failed to delete roster" },
+      { status: 500 }
+    );
   }
 }
