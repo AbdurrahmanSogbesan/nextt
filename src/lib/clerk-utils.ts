@@ -1,5 +1,6 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import { MemberUserDetails } from "@/types";
+// note: server only
 
 /**
  * Fetches user data from Clerk and creates a user map
@@ -26,22 +27,5 @@ export async function createUserMap(
         avatarUrl: user.imageUrl,
       },
     ])
-  );
-}
-
-/**
- * Gets user info from the user map or returns a fallback
- */
-export function getUserInfo(
-  userMap: Map<string, MemberUserDetails>,
-  userId: string
-): MemberUserDetails {
-  return (
-    userMap.get(userId) || {
-      firstName: "Unknown",
-      lastName: "User",
-      email: "",
-      avatarUrl: "",
-    }
   );
 }

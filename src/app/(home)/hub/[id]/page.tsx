@@ -1,5 +1,6 @@
-import { auth } from "@clerk/nextjs/server";
-import { notFound, redirect } from "next/navigation";
+"use client";
+
+import { notFound, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,111 +19,61 @@ import {
   UserPlus,
 } from "lucide-react";
 import Link from "next/link";
-import prisma from "@/lib/prisma";
 import { getFormattedDate } from "@/lib/utils";
 import MemberCard from "@/components/MemberCard";
 import { accent } from "@/lib/theme";
 import TurnCard from "@/components/TurnCard";
 import AvatarStack from "@/components/AvatarStack";
 import Initials from "@/components/Initials";
-import { createUserMap, getUserInfo } from "@/lib/user-utils";
+import { GetHubResponse } from "@/types/hub";
+import { useAuth } from "@clerk/nextjs";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiGet, apiPost } from "@/lib/api";
+import Loading from "@/components/Loading";
+import { useEffect } from "react";
+import { getUserInfo } from "@/lib/utils";
 
-export default async function HubDashboard({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { userId } = await auth();
-  const { id } = await params;
+export default function HubDashboard() {
+  const { userId } = useAuth();
+  const { id } = useParams<{ id: string }>();
 
-  if (!userId) redirect("/sign-in");
+  const { data, isLoading } = useQuery({
+    queryKey: ["getHub", id],
+    queryFn: () => apiGet<GetHubResponse>(`/api/hubs/${id}`),
+  });
 
-  const dbhub = await prisma.hub
-    .findUnique({
-      where: { uuid: id },
-      include: {
-        members: { orderBy: { dateJoined: "desc" } },
-        rosters: {
-          include: { members: true },
-        },
-        activities: {
-          orderBy: { createdAt: "desc" },
-        },
-      },
-    })
-    .catch(() => null);
+  const { mutate: updateVisitStatus } = useMutation({
+    mutationKey: ["updateVisitStatus", id],
+    mutationFn: () => apiPost(`/api/hubs/${id}/last-visit`),
+    onError: (error) => {
+      console.error("Failed to update visit status:", error);
+    },
+  });
 
-  const uniqueIds = new Set([
-    ...(dbhub?.members.map((m) => m.hubUserid) || []),
-    ...(dbhub?.rosters.flatMap((ros) =>
-      ros.members.map((rom) => rom.rosterUserId)
-    ) || []),
-  ]);
+  const { hub, userMap: userMapRecord } = data || {};
 
-  const userMap = await createUserMap(Array.from(uniqueIds));
+  // Update visit status after successful hub load
+  useEffect(() => {
+    if (hub && !isLoading) {
+      const isMember = hub.members.some((m) => m.hubUserid === userId);
+      if (isMember) {
+        updateVisitStatus();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hub?.id, userId, isLoading]);
 
-  // Enrich hub data with user information
-  const hub = {
-    ...dbhub,
-    members:
-      dbhub?.members.map((member) => ({
-        ...member,
-        user: getUserInfo(userMap, member.hubUserid),
-      })) || [],
-    rosters:
-      dbhub?.rosters.map((roster) => ({
-        ...roster,
-        members: roster.members.map((member) => ({
-          ...member,
-          user: getUserInfo(userMap, member.rosterUserId),
-        })),
-      })) || [],
-    activities:
-      dbhub?.activities.map((activity) => ({
-        ...activity,
-        actor: activity.actorId ? getUserInfo(userMap, activity.actorId) : null,
-      })) || [],
-  };
+  if (isLoading) return <Loading />;
 
-  if (!hub) notFound();
+  if (!hub || !userId) return notFound();
+
+  // Convert Record back to Map for getUserInfo function
+  const userMap = userMapRecord
+    ? new Map(Object.entries(userMapRecord))
+    : new Map();
 
   const isMember = hub.members.some((m) => m.hubUserid === userId);
-  if (!isMember && hub.visibility === "PRIVATE") notFound();
-
-  // Update lastVisitedUsers: ensure user is only in this hub's lastVisitedUsers
-  if (!hub.lastVisitedUsers?.includes(userId)) {
-    // Get all hubs where user is currently in lastVisitedUsers
-    const hubsWithUser = await prisma.hub.findMany({
-      where: { lastVisitedUsers: { has: userId } },
-      select: { id: true, lastVisitedUsers: true },
-    });
-
-    const updates = [
-      // Add user to current hub
-      prisma.hub.update({
-        where: { id: hub.id },
-        data: { lastVisitedUsers: { push: userId } },
-      }),
-    ];
-
-    // Remove user from all other hubs
-    hubsWithUser
-      .filter((h) => h.id !== hub.id)
-      .forEach((otherHub) => {
-        updates.push(
-          prisma.hub.update({
-            where: { id: otherHub.id },
-            data: {
-              lastVisitedUsers: {
-                set: otherHub.lastVisitedUsers.filter((id) => id !== userId),
-              },
-            },
-          })
-        );
-      });
-
-    await prisma.$transaction(updates);
-  }
+  if (!isMember && hub.visibility === "PRIVATE") return notFound();
 
   const theme = accent(hub.theme || "indigo");
 
