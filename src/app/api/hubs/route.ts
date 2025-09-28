@@ -48,7 +48,7 @@ export async function POST(req: Request) {
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid request data", details: z.treeifyError(error) },
+        { error: "Invalid request data", details: z.flattenError(error) },
         { status: 400 }
       );
     }

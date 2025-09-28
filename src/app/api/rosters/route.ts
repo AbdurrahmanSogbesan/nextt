@@ -3,6 +3,8 @@ import { z } from "zod";
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { createRosterSchema } from "@/lib/schemas";
+import { ROTATION_CHOICE } from "@prisma/client";
+import { getNextDate } from "@/lib/utils";
 
 export async function POST(req: Request) {
   try {
@@ -26,7 +28,7 @@ export async function POST(req: Request) {
       | Array<{ rosterUserId: string; position: number; isAdmin: boolean }>
       | undefined;
 
-    if (validated.inlcudeAllHubMembers) {
+    if (validated.includeAllHubMembers) {
       const hubMembers = await prisma.hubMembership.findMany({
         where: { hubId: validated.hubId, isDeleted: false },
         orderBy: { dateJoined: "asc" },
@@ -91,6 +93,13 @@ export async function POST(req: Request) {
       }));
     }
 
+    if (!membersToCreate || membersToCreate.length === 0) {
+      return NextResponse.json(
+        { error: "At least one member is required" },
+        { status: 400 }
+      );
+    }
+
     // Create roster + memberships
     const roster = await prisma.roster.create({
       data: {
@@ -98,16 +107,35 @@ export async function POST(req: Request) {
         description: validated.description ?? "",
         start: validated.start,
         end: validated.end,
+        hub: { connect: { id: validated.hubId } },
+        isPrivate: validated.isPrivate,
+        rotationType: validated.rotationType,
+        createdById: userId,
         enablePushNotifications: validated.enablePushNotifications,
         enableEmailNotifications: validated.enableEmailNotifications, // keep naming consistent with your model
-        isPrivate: validated.isPrivate,
-        rotationType: validated.rotationChoice ?? null,
-        hub: { connect: { id: validated.hubId } },
-        createdById: userId,
         members: { create: membersToCreate },
+        currentTurnId: membersToCreate?.[0]?.rosterUserId,
+        nextTurnId: membersToCreate?.[1]?.rosterUserId,
+        nextDate: getNextDate(validated.rotationType, validated.rotationOption),
       },
-      select: { uuid: true },
+      select: { uuid: true, id: true },
     });
+
+    // Create rotation option if custom rotation choice and rotation option is provided
+    if (roster.uuid) {
+      if (
+        validated.rotationType === ROTATION_CHOICE.CUSTOM &&
+        validated.rotationOption
+      ) {
+        await prisma.rotationOption.create({
+          data: {
+            roster: { connect: { id: roster.id } },
+            rotation: validated.rotationOption.rotation,
+            unit: validated.rotationOption.unit,
+          },
+        });
+      }
+    }
 
     return NextResponse.json({ id: roster.uuid });
   } catch (error) {
@@ -115,7 +143,7 @@ export async function POST(req: Request) {
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid request data", details: error.flatten() },
+        { error: "Invalid request data", details: z.flattenError(error) },
         { status: 400 }
       );
     }
