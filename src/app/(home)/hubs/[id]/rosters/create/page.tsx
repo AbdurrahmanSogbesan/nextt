@@ -97,7 +97,7 @@ export default function CreateRosterPage() {
 
   const { mutate: createRoster, isPending: isCreatingRoster } = useCreateRoster(
     (id) => {
-      router.push(`/hub/${hubId}/rosters/${id}`);
+      router.push(`/hubs/${hubId}/rosters/${id}`);
     }
   );
 
@@ -443,7 +443,7 @@ export default function CreateRosterPage() {
                     <Button
                       type="button"
                       variant="ghost"
-                      onClick={() => router.push(`/hub/${hubId}`)}
+                      onClick={() => router.push(`/hubs/${hubId}`)}
                     >
                       Cancel
                     </Button>

@@ -122,7 +122,7 @@ export default function HubMembersPage() {
                 </p>
               </div>
 
-              <Link href={`/hub/${id}/invite`}>
+              <Link href={`/hubs/${id}/invite`}>
                 <Button className="gap-2">
                   <UserPlus className="h-4 w-4" />
                   Invite Hub Member

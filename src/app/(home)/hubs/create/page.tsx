@@ -55,7 +55,7 @@ export default function NewHubPage() {
   });
 
   const { mutate: createHub, isPending: isCreatingHub } = useCreateHub((id) => {
-    router.push(`/hub/${id}`);
+    router.push(`/hubs/${id}`);
   });
 
   async function onSubmit(values: CreateHubForm) {
