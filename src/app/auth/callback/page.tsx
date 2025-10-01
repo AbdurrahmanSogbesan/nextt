@@ -16,7 +16,7 @@ export default async function AuthCallbackPage() {
   });
 
   if (hubWithVisit) {
-    return redirect(`/hub/${hubWithVisit.uuid}`);
+    return redirect(`/hubs/${hubWithVisit.id}`);
   }
 
   // 2. Otherwise, get first hub user is member of
@@ -29,9 +29,9 @@ export default async function AuthCallbackPage() {
   });
 
   if (firstHub) {
-    return redirect(`/hub/${firstHub.uuid}`);
+    return redirect(`/hubs/${firstHub.id}`);
   }
 
   // 3. Otherwise, fallback to create
-  return redirect("/hub/create");
+  return redirect("/hubs/create");
 }

@@ -16,7 +16,7 @@ export async function POST(
 
     // First verify the hub exists and user has access
     const hub = await prisma.hub.findUnique({
-      where: { uuid: id },
+      where: { id: parseInt(id) },
       select: {
         id: true,
         visibility: true,

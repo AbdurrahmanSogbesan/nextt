@@ -42,13 +42,13 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({ id: hub.uuid });
+    return NextResponse.json({ id: hub.id });
   } catch (error) {
     console.error("Error creating hub:", error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid request data", details: z.treeifyError(error) },
+        { error: "Invalid request data", details: z.flattenError(error) },
         { status: 400 }
       );
     }

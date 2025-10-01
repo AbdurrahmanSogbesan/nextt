@@ -1,4 +1,8 @@
-import { ROTATION_CHOICE, VISIBILITY_CHOICE } from "@prisma/client";
+import {
+  ROTATION_CHOICE,
+  ROTATION_TYPE,
+  VISIBILITY_CHOICE,
+} from "@prisma/client";
 import { z } from "zod";
 
 // HUB
@@ -24,27 +28,38 @@ export const createRosterSchema = z.object({
   hubId: z.number().int().positive(),
   name: z.string().min(2, "Title is required"),
   description: z.string().optional(),
-  rotationChoice: z.enum(ROTATION_CHOICE).optional(),
-  start: z.coerce.date(),
-  end: z.coerce.date(),
-  enablePushNotifications: z.boolean().default(false),
-  enableEmailNotifications: z.boolean().default(false),
-  isPrivate: z.boolean().default(false),
-  inlcudeAllHubMembers: z.boolean().default(false),
+  rotationType: z.enum(ROTATION_CHOICE),
+  // note: include output type of coerced values
+  start: z.coerce.date<Date>(),
+  end: z.coerce.date<Date>(),
+  enablePushNotifications: z.boolean(),
+  enableEmailNotifications: z.boolean(),
+  isPrivate: z.boolean(),
+  includeAllHubMembers: z.boolean(),
   members: z.array(MemberInput).optional(),
+  rotationOption: z
+    .object({
+      rotation: z.enum(ROTATION_TYPE),
+      // need to specity output type otherwise react-hook-form loses its shit
+      unit: z.coerce.number<number>().positive(),
+    })
+    .optional(),
 });
 
 export const patchRosterSchema = z.object({
   name: z.string().min(2).optional(),
   description: z.string().optional(),
-  rotationChoice: z.enum(ROTATION_CHOICE).optional(),
-  start: z.coerce.date().optional(),
-  end: z.coerce.date().optional(),
+  rotationType: z.enum(ROTATION_CHOICE).optional(),
+  start: z.coerce.date<Date>().optional(),
+  end: z.coerce.date<Date>().optional(),
   enablePushNotifications: z.boolean().optional(),
   enableEmailNotifications: z.boolean().optional(),
   isPrivate: z.boolean().optional(),
-  members: z.array(z.object({
-    userId: z.string().min(1),
-    position: z.number().int().positive(),
-  })).optional(),
+  rotationOption: z
+    .object({
+      rotation: z.enum(ROTATION_TYPE),
+      unit: z.coerce.number<number>(),
+    })
+    .optional(),
+  members: z.array(MemberInput).optional(),
 });

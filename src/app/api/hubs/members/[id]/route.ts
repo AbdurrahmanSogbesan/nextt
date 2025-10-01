@@ -11,7 +11,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: hubUuid } = await params;
+    const { id } = await params;
     const { userId } = await auth();
 
     if (!userId) {
@@ -23,7 +23,7 @@ export async function PATCH(
 
     // First, verify the hub exists
     const hub = await prisma.hub.findUnique({
-      where: { uuid: hubUuid },
+      where: { id: parseInt(id) },
       include: {
         members: {
           where: {
@@ -105,7 +105,7 @@ export async function PATCH(
 
     return NextResponse.json({
       membership: {
-        hubUserId: updatedMembership.hubUserid,
+        hubUserid: updatedMembership.hubUserid,
         isAdmin: updatedMembership.isAdmin,
         dateJoined: updatedMembership.dateJoined,
       },
@@ -115,7 +115,7 @@ export async function PATCH(
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid request data", details: error.issues },
+        { error: "Invalid request data", details: z.flattenError(error) },
         { status: 400 }
       );
     }
@@ -135,7 +135,7 @@ export async function GET(
     const { id } = await params;
 
     const dbhub = await prisma.hub.findUnique({
-      where: { uuid: id },
+      where: { id: parseInt(id) },
       include: { members: { where: { isDeleted: { equals: false } } } },
     });
 

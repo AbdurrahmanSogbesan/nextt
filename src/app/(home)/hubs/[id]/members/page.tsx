@@ -3,28 +3,24 @@
 import MemberCard from "@/components/MemberCard";
 import ConfirmationModal from "@/components/ConfirmationModal";
 import { Button } from "@/components/ui/button";
-import {
-  GetHubMembersResponse,
-  HubMember,
-  UpdateMemberRoleResponse,
-} from "@/types/hub";
+import { HubMember } from "@/types/hub";
 import { useAuth } from "@clerk/nextjs";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
-import { apiGet, apiPatch } from "@/lib/api";
-import { updateHubMemberRoleSchema } from "@/lib/schemas";
-import { z } from "zod";
 import { useParams } from "next/navigation";
 import Loading from "@/components/Loading";
+import {
+  useGetHubMembers,
+  useRemoveHubMember,
+  useUpdateHubMemberRole,
+} from "@/hooks/hub";
 
 export default function HubMembersPage() {
   const { id } = useParams<{ id: string }>();
 
   const { userId } = useAuth();
-  const queryClient = useQueryClient();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalConfig, setModalConfig] = useState<{
@@ -36,41 +32,14 @@ export default function HubMembersPage() {
   } | null>(null);
 
   const { mutateAsync: updateMemberRole, isPending: isUpdatingRole } =
-    useMutation({
-      mutationKey: ["updateMemberRole"],
-      mutationFn: async ({
-        memberUserId,
-        isAdmin,
-      }: z.infer<typeof updateHubMemberRoleSchema>) => {
-        if (!id) throw new Error("Hub ID is required");
-
-        const resp = await apiPatch<UpdateMemberRoleResponse>(
-          `/api/hubs/members/${id}`,
-          {
-            memberUserId,
-            isAdmin,
-          }
-        );
-
-        return resp.membership;
-      },
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["getHubMembers", id] });
-        toast.success("Member role updated successfully");
-        setIsModalOpen(false);
-      },
-      onError: (error: Error) => {
-        toast.error(error.message || "Failed to update member role");
-      },
+    useUpdateHubMemberRole(id, () => {
+      setIsModalOpen(false);
     });
 
   const { mutateAsync: removeMember, isPending: isRemovingMember } =
-    useMutation({
-      mutationKey: ["removeMember"],
-      mutationFn: () => {
-        // TODO: Implement remove member API
-        return Promise.resolve();
-      },
+    // todo: impl remove member API
+    useRemoveHubMember(id, () => {
+      setIsModalOpen(false);
     });
 
   const showConfirmationModal = (config: typeof modalConfig) => {
@@ -127,10 +96,7 @@ export default function HubMembersPage() {
     });
   };
 
-  const { isLoading, data } = useQuery({
-    queryKey: ["getHubMembers", id],
-    queryFn: () => apiGet<GetHubMembersResponse>(`/api/hubs/members/${id}`),
-  });
+  const { data, isLoading } = useGetHubMembers(id);
 
   const { hub, members } = data || {};
 
@@ -156,7 +122,7 @@ export default function HubMembersPage() {
                 </p>
               </div>
 
-              <Link href={`/hub/${id}/invite`}>
+              <Link href={`/hubs/${id}/invite`}>
                 <Button className="gap-2">
                   <UserPlus className="h-4 w-4" />
                   Invite Hub Member
