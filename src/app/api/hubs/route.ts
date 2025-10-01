@@ -42,7 +42,7 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({ id: hub.uuid });
+    return NextResponse.json({ id: hub.id });
   } catch (error) {
     console.error("Error creating hub:", error);
 

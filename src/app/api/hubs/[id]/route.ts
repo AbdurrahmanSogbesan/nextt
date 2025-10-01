@@ -17,7 +17,7 @@ export async function GET(
     }
 
     const dbhub = await prisma.hub.findUnique({
-      where: { uuid: id },
+      where: { id: parseInt(id) },
       include: {
         members: { orderBy: { dateJoined: "desc" } },
         rosters: {

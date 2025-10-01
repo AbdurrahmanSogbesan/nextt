@@ -37,7 +37,7 @@ export default function HubDashboard() {
   const { data, isLoading } = useGetHub(id);
 
   const { hub, userMap: userMapRecord } = data || {};
-  const isMember = hub?.members.some((m) => m.hubUserid === userId);
+  const isMember = hub?.members.some((m) => m.hubUserid === userId!);
 
   useUpdateLastVisitStatus(id, {
     enabled: !!hub && !isLoading && isMember,
@@ -45,7 +45,7 @@ export default function HubDashboard() {
 
   if (isLoading) return <Loading />;
 
-  if (!hub || !userId) return notFound();
+  if (!hub) return notFound();
 
   // Convert Record back to Map for getUserInfo function
   const userMap = userMapRecord
@@ -70,7 +70,7 @@ export default function HubDashboard() {
     return {
       name: user.firstName + " " + user.lastName,
       avatarUrl: user.avatarUrl,
-      isMe: turnId === userId,
+      isMe: turnId === userId!,
     };
   }
 
@@ -82,7 +82,7 @@ export default function HubDashboard() {
           <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
             <div>
               <p className="text-sm text-muted-foreground">
-                Welcome back, {getUserInfo(userMap, userId).firstName}
+                Welcome back, {getUserInfo(userMap, userId!).firstName}
               </p>
               <h1 className="text-3xl font-semibold tracking-tight">
                 {hub.name}
@@ -95,13 +95,13 @@ export default function HubDashboard() {
             </div>
 
             <div className="flex gap-2">
-              <Link href={`/hub/${hub.uuid}/invite`}>
+              <Link href={`/hub/${hub.id}/invite`}>
                 <Button className="gap-2">
                   <UserPlus className="h-4 w-4" />
                   Invite to hub
                 </Button>
               </Link>
-              <Link href={`/hub/${hub.uuid}/rosters/create`}>
+              <Link href={`/hub/${hub.id}/rosters/create`}>
                 <Button variant="outline" className="gap-2">
                   <Plus className="h-4 w-4" />
                   Create roster
@@ -177,7 +177,7 @@ export default function HubDashboard() {
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-medium">Rosters</h2>
             <Link
-              href={`/hub/${hub.uuid}/rosters`}
+              href={`/hub/${hub.id}/rosters`}
               className="text-sm text-muted-foreground hover:underline"
             >
               View all
@@ -187,7 +187,7 @@ export default function HubDashboard() {
           <div className="flex flex-col space-y-3">
             {hub.rosters.length > 0 ? (
               hub.rosters.slice(0, 3).map((r) => (
-                <Link key={r.id} href={`/hub/${hub.uuid}/rosters/${r.id}`}>
+                <Link key={r.id} href={`/hub/${hub.id}/rosters/${r.id}`}>
                   <div className="group flex items-center justify-between rounded-xl border bg-card px-4 py-3 shadow-sm transition hover:shadow">
                     <div className="flex items-center gap-3">
                       <div
@@ -225,7 +225,7 @@ export default function HubDashboard() {
                 <span className="font-medium text-muted-foreground">
                   You don&apos;t belong to any Roster yet...{" "}
                   <Link
-                    href={`/hub/${hub.uuid}/rosters/create`}
+                    href={`/hub/${hub.id}/rosters/create`}
                     className="text-primary hover:underline"
                   >
                     Create here
@@ -235,7 +235,7 @@ export default function HubDashboard() {
             )}
 
             {/* Create roster dashed card */}
-            <Link href={`/hub/${hub.uuid}/rosters/create`}>
+            <Link href={`/hub/${hub.id}/rosters/create`}>
               <div className="flex items-center justify-center gap-2 rounded-xl border border-dashed bg-background/60 px-4 py-6 text-sm text-muted-foreground hover:bg-background">
                 <Plus className="h-4 w-4" /> Create a roster
               </div>
@@ -248,7 +248,7 @@ export default function HubDashboard() {
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-medium">Hub mates ({memberCount})</h2>
             <Link
-              href={`/hub/${hub.uuid}/members`}
+              href={`/hub/${hub.id}/members`}
               className="text-sm text-muted-foreground hover:underline"
             >
               View all
@@ -268,7 +268,7 @@ export default function HubDashboard() {
             })}
 
             {/* Add member */}
-            <Link href={`/hub/${hub.uuid}/invite`}>
+            <Link href={`/hub/${hub.id}/invite`}>
               <div className="grid place-items-center h-full rounded-2xl border border-dashed bg-background/60 p-6 hover:bg-background">
                 <div className="flex flex-col items-center gap-3">
                   <div

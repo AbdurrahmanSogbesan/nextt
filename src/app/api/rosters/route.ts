@@ -118,11 +118,11 @@ export async function POST(req: Request) {
         nextTurnId: membersToCreate?.[1]?.rosterUserId,
         nextDate: getNextDate(validated.rotationType, validated.rotationOption),
       },
-      select: { uuid: true, id: true },
+      select: { id: true },
     });
 
     // Create rotation option if custom rotation choice and rotation option is provided
-    if (roster.uuid) {
+    if (roster.id) {
       if (
         validated.rotationType === ROTATION_CHOICE.CUSTOM &&
         validated.rotationOption
@@ -137,7 +137,7 @@ export async function POST(req: Request) {
       }
     }
 
-    return NextResponse.json({ id: roster.uuid });
+    return NextResponse.json({ id: roster.id });
   } catch (error) {
     console.error("Error creating roster:", error);
 

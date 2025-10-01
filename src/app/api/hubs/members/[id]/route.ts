@@ -11,7 +11,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: hubUuid } = await params;
+    const { id } = await params;
     const { userId } = await auth();
 
     if (!userId) {
@@ -23,7 +23,7 @@ export async function PATCH(
 
     // First, verify the hub exists
     const hub = await prisma.hub.findUnique({
-      where: { uuid: hubUuid },
+      where: { id: parseInt(id) },
       include: {
         members: {
           where: {
@@ -135,7 +135,7 @@ export async function GET(
     const { id } = await params;
 
     const dbhub = await prisma.hub.findUnique({
-      where: { uuid: id },
+      where: { id: parseInt(id) },
       include: { members: { where: { isDeleted: { equals: false } } } },
     });
 

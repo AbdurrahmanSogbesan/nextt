@@ -23,7 +23,7 @@ async function assertAdmin(rosterId: number, userId: string) {
 
 export async function PATCH(
   req: Request,
-  context: { params: Promise<{ uuid: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const { userId } = await auth();
@@ -33,10 +33,10 @@ export async function PATCH(
     const body = await req.json();
     const data = patchRosterSchema.parse(body);
 
-    const { uuid } = await context.params;
+    const { id } = await context.params;
 
     const roster = await prisma.roster.findUnique({
-      where: { uuid },
+      where: { id: parseInt(id) },
       select: {
         id: true,
         hubId: true,
@@ -151,12 +151,12 @@ export async function PATCH(
     }
 
     const updated = await prisma.roster.update({
-      where: { uuid },
+      where: { id: parseInt(id) },
       data: {
         ...updatePayload,
         ...(membersNested && { members: membersNested }),
       },
-      select: { uuid: true, id: true },
+      select: { id: true },
     });
 
     // Handle custom rotation option
@@ -188,7 +188,7 @@ export async function PATCH(
       });
     }
 
-    return NextResponse.json({ id: updated.uuid });
+    return NextResponse.json({ id: updated.id });
   } catch (error) {
     console.error("Error updating roster:", error);
 
@@ -208,16 +208,16 @@ export async function PATCH(
 
 export async function DELETE(
   _req: Request,
-  context: { params: Promise<{ uuid: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const { uuid } = await context.params;
+    const { id } = await context.params;
     const roster = await prisma.roster.findUnique({
-      where: { uuid: uuid },
+      where: { id: parseInt(id) },
       select: { id: true, isDeleted: true },
     });
 

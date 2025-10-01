@@ -52,13 +52,13 @@ const rotationTypeLabels: Record<ROTATION_TYPE, string> = {
 
 export default function CreateRosterPage() {
   const router = useRouter();
-  const { id: hubUuid } = useParams<{ id: string }>();
+  const { id: hubId } = useParams<{ id: string }>();
 
   const {
     data: hubData,
     isLoading: isLoadingHub,
     error: hubError,
-  } = useGetHub(hubUuid);
+  } = useGetHub(hubId);
 
   const form = useForm<CreateRosterForm>({
     resolver: zodResolver(createRosterSchema),
@@ -97,7 +97,7 @@ export default function CreateRosterPage() {
 
   const { mutate: createRoster, isPending: isCreatingRoster } = useCreateRoster(
     (id) => {
-      router.push(`/hub/${hubUuid}/rosters/${id}`);
+      router.push(`/hub/${hubId}/rosters/${id}`);
     }
   );
 
@@ -443,7 +443,7 @@ export default function CreateRosterPage() {
                     <Button
                       type="button"
                       variant="ghost"
-                      onClick={() => router.push(`/hub/${hubUuid}`)}
+                      onClick={() => router.push(`/hub/${hubId}`)}
                     >
                       Cancel
                     </Button>
