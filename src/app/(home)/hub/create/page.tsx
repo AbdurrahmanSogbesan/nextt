@@ -1,6 +1,5 @@
 "use client";
 
-import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,11 +28,8 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import Image from "next/image";
 import { createHubSchema } from "@/lib/schemas";
-import { apiPost } from "@/lib/api";
-import { toast } from "sonner";
-import { useMutation } from "@tanstack/react-query";
-
-type Values = z.infer<typeof createHubSchema>;
+import { useCreateHub } from "@/hooks/hub";
+import { CreateHubForm } from "@/types/hub";
 
 const themeToBg: Record<string, string> = {
   indigo: "bg-indigo-500",
@@ -47,7 +43,7 @@ const themeToBg: Record<string, string> = {
 export default function NewHubPage() {
   const router = useRouter();
 
-  const form = useForm<Values>({
+  const form = useForm<CreateHubForm>({
     resolver: zodResolver(createHubSchema),
     defaultValues: {
       name: "",
@@ -58,24 +54,11 @@ export default function NewHubPage() {
     },
   });
 
-  const { mutate: createHub, isPending: isCreatingHub } = useMutation({
-    mutationKey: ["createHub"],
-    mutationFn: async (values: Values) => {
-      const { id } = await apiPost<{ id: string }>("/api/hubs", values);
-      return id;
-    },
-    onSuccess: (id) => {
-      router.push(`/hub/${id}`);
-    },
-    onError: (error) => {
-      console.error("Error creating hub:", error);
-      toast.error("Failed to create hub", {
-        description: "Please try again",
-      });
-    },
+  const { mutate: createHub, isPending: isCreatingHub } = useCreateHub((id) => {
+    router.push(`/hub/${id}`);
   });
 
-  async function onSubmit(values: Values) {
+  async function onSubmit(values: CreateHubForm) {
     createHub(values);
   }
 
@@ -237,7 +220,7 @@ export default function NewHubPage() {
                       >
                         Cancel
                       </Button>
-                      <Button disabled={isCreatingHub} type="submit">
+                      <Button type="submit" loading={isCreatingHub}>
                         Create hub
                       </Button>
                     </div>

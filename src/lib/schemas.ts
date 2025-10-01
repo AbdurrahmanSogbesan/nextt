@@ -29,17 +29,19 @@ export const createRosterSchema = z.object({
   name: z.string().min(2, "Title is required"),
   description: z.string().optional(),
   rotationType: z.enum(ROTATION_CHOICE),
-  start: z.coerce.date(),
-  end: z.coerce.date(),
-  enablePushNotifications: z.boolean().default(false),
-  enableEmailNotifications: z.boolean().default(false),
-  isPrivate: z.boolean().default(false),
-  includeAllHubMembers: z.boolean().default(false),
+  // note: include output type of coerced values
+  start: z.coerce.date<Date>(),
+  end: z.coerce.date<Date>(),
+  enablePushNotifications: z.boolean(),
+  enableEmailNotifications: z.boolean(),
+  isPrivate: z.boolean(),
+  includeAllHubMembers: z.boolean(),
   members: z.array(MemberInput).optional(),
   rotationOption: z
     .object({
       rotation: z.enum(ROTATION_TYPE),
-      unit: z.number().int().positive(),
+      // need to specity output type otherwise react-hook-form loses its shit
+      unit: z.coerce.number<number>().positive(),
     })
     .optional(),
 });
@@ -48,23 +50,16 @@ export const patchRosterSchema = z.object({
   name: z.string().min(2).optional(),
   description: z.string().optional(),
   rotationType: z.enum(ROTATION_CHOICE).optional(),
-  start: z.coerce.date().optional(),
-  end: z.coerce.date().optional(),
+  start: z.coerce.date<Date>().optional(),
+  end: z.coerce.date<Date>().optional(),
   enablePushNotifications: z.boolean().optional(),
   enableEmailNotifications: z.boolean().optional(),
   isPrivate: z.boolean().optional(),
   rotationOption: z
     .object({
       rotation: z.enum(ROTATION_TYPE),
-      unit: z.number().int().positive(),
+      unit: z.coerce.number<number>(),
     })
     .optional(),
-  members: z
-    .array(
-      z.object({
-        userId: z.string().min(1),
-        position: z.number().int().positive(),
-      })
-    )
-    .optional(),
+  members: z.array(MemberInput).optional(),
 });

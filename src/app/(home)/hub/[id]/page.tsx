@@ -25,43 +25,23 @@ import { accent } from "@/lib/theme";
 import TurnCard from "@/components/TurnCard";
 import AvatarStack from "@/components/AvatarStack";
 import Initials from "@/components/Initials";
-import { GetHubResponse } from "@/types/hub";
 import { useAuth } from "@clerk/nextjs";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiGet, apiPost } from "@/lib/api";
 import Loading from "@/components/Loading";
-import { useEffect } from "react";
 import { getUserInfo } from "@/lib/utils";
+import { useGetHub, useUpdateLastVisitStatus } from "@/hooks/hub";
 
 export default function HubDashboard() {
   const { userId } = useAuth();
   const { id } = useParams<{ id: string }>();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["getHub", id],
-    queryFn: () => apiGet<GetHubResponse>(`/api/hubs/${id}`),
-  });
-
-  const { mutate: updateVisitStatus } = useMutation({
-    mutationKey: ["updateVisitStatus", id],
-    mutationFn: () => apiPost(`/api/hubs/${id}/last-visit`),
-    onError: (error) => {
-      console.error("Failed to update visit status:", error);
-    },
-  });
+  const { data, isLoading } = useGetHub(id);
 
   const { hub, userMap: userMapRecord } = data || {};
+  const isMember = hub?.members.some((m) => m.hubUserid === userId);
 
-  // Update visit status after successful hub load
-  useEffect(() => {
-    if (hub && !isLoading) {
-      const isMember = hub.members.some((m) => m.hubUserid === userId);
-      if (isMember) {
-        updateVisitStatus();
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hub?.id, userId, isLoading]);
+  useUpdateLastVisitStatus(id, {
+    enabled: !!hub && !isLoading && isMember,
+  });
 
   if (isLoading) return <Loading />;
 
@@ -72,7 +52,6 @@ export default function HubDashboard() {
     ? new Map(Object.entries(userMapRecord))
     : new Map();
 
-  const isMember = hub.members.some((m) => m.hubUserid === userId);
   if (!isMember && hub.visibility === "PRIVATE") return notFound();
 
   const theme = accent(hub.theme || "indigo");
@@ -122,7 +101,7 @@ export default function HubDashboard() {
                   Invite to hub
                 </Button>
               </Link>
-              <Link href={`/hub/${hub.uuid}/rosters/new`}>
+              <Link href={`/hub/${hub.uuid}/rosters/create`}>
                 <Button variant="outline" className="gap-2">
                   <Plus className="h-4 w-4" />
                   Create roster
@@ -205,7 +184,7 @@ export default function HubDashboard() {
             </Link>
           </div>
 
-          <div className="space-y-3">
+          <div className="flex flex-col space-y-3">
             {hub.rosters.length > 0 ? (
               hub.rosters.slice(0, 3).map((r) => (
                 <Link key={r.id} href={`/hub/${hub.uuid}/rosters/${r.id}`}>
@@ -246,7 +225,7 @@ export default function HubDashboard() {
                 <span className="font-medium text-muted-foreground">
                   You don&apos;t belong to any Roster yet...{" "}
                   <Link
-                    href={`/hub/${hub.uuid}/rosters/new`}
+                    href={`/hub/${hub.uuid}/rosters/create`}
                     className="text-primary hover:underline"
                   >
                     Create here
@@ -256,7 +235,7 @@ export default function HubDashboard() {
             )}
 
             {/* Create roster dashed card */}
-            <Link href={`/hub/${hub.uuid}/rosters/new`}>
+            <Link href={`/hub/${hub.uuid}/rosters/create`}>
               <div className="flex items-center justify-center gap-2 rounded-xl border border-dashed bg-background/60 px-4 py-6 text-sm text-muted-foreground hover:bg-background">
                 <Plus className="h-4 w-4" /> Create a roster
               </div>

@@ -105,7 +105,7 @@ export async function PATCH(
 
     return NextResponse.json({
       membership: {
-        hubUserId: updatedMembership.hubUserid,
+        hubUserid: updatedMembership.hubUserid,
         isAdmin: updatedMembership.isAdmin,
         dateJoined: updatedMembership.dateJoined,
       },

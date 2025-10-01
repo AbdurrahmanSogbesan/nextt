@@ -1,5 +1,6 @@
 import { Hub, Prisma } from "@prisma/client";
 import { MemberUserDetails } from ".";
+import { createHubSchema, updateHubMemberRoleSchema } from "@/lib/schemas";
 
 type PrismaHub = Prisma.HubGetPayload<{
   include: {
@@ -42,3 +43,9 @@ export type GetHubMembersResponse = {
   hub: Hub;
   members: HubMember[];
 };
+
+export type CreateHubForm = z.infer<typeof createHubSchema>;
+
+export type UpdateHubMemberRoleParams = z.infer<
+  typeof updateHubMemberRoleSchema
+>;
