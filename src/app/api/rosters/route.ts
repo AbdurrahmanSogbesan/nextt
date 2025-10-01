@@ -115,7 +115,9 @@ export async function POST(req: Request) {
         enableEmailNotifications: validated.enableEmailNotifications, // keep naming consistent with your model
         members: { create: membersToCreate },
         currentTurnId: membersToCreate?.[0]?.rosterUserId,
-        nextTurnId: membersToCreate?.[1]?.rosterUserId,
+        nextTurnId: membersToCreate?.length === 1
+          ? membersToCreate[0].rosterUserId
+          : membersToCreate?.[1]?.rosterUserId,
         nextDate: getNextDate(validated.rotationType, validated.rotationOption),
       },
       select: { id: true },
