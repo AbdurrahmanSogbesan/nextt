@@ -4,14 +4,7 @@ import { useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -167,14 +160,13 @@ export default function CreateRosterPage() {
         </div>
 
         <Card className="border border-border/60 bg-background/80 backdrop-blur shadow-sm">
-          <CardHeader>
-            <CardTitle>Basic Information</CardTitle>
-            <CardDescription>
-              Venue, times, location, line ups... we will keep you in the loop
-              when things are updated
-            </CardDescription>
-          </CardHeader>
           <CardContent className="space-y-6">
+            <div>
+              <h3 className="text-lg font-medium">Basic Information</h3>
+              <p className="text-sm text-muted-foreground">
+                Name and describe the roster so members know what it’s for.
+              </p>
+            </div>
             <Form {...form}>
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
                 <FormField
@@ -252,8 +244,8 @@ export default function CreateRosterPage() {
                   <div>
                     <h3 className="text-lg font-medium">Rotation Options</h3>
                     <p className="text-sm text-muted-foreground">
-                      Venue, times, location, line ups... we will keep you in
-                      the loop when things are updated
+                      Choose the frequency of rotation and set the active
+                      window.
                     </p>
                   </div>
 
@@ -375,8 +367,7 @@ export default function CreateRosterPage() {
                       Notification Settings
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      Venue, times, location, Line ups. We&apos;ll keep you in
-                      the loop when things are updated
+                      Choose how members get notified about updates.
                     </p>
                   </div>
 
