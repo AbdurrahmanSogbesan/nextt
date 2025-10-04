@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -35,6 +35,7 @@ import { DatePicker } from "@/components/DatePicker";
 import { useGetHub } from "@/hooks/hub";
 import { CreateRosterForm } from "@/types/roster";
 import { useCreateRoster } from "@/hooks/roster";
+import SelectMembersModal from "@/components/SelectMembersModal";
 
 const rotationChoiceLabels: Record<ROTATION_CHOICE, string> = {
   DAILY: "Daily",
@@ -53,6 +54,7 @@ const rotationTypeLabels: Record<ROTATION_TYPE, string> = {
 export default function CreateRosterPage() {
   const router = useRouter();
   const { id: hubId } = useParams<{ id: string }>();
+  const [isSelectMembersOpen, setIsSelectMembersOpen] = useState(false);
 
   const {
     data: hubData,
@@ -108,6 +110,7 @@ export default function CreateRosterPage() {
         values.rotationType === ROTATION_CHOICE.CUSTOM
           ? values.rotationOption
           : undefined,
+      members: includeAllHubMembers ? undefined : values.members,
     };
     console.log("formValues", formValues);
     createRoster(formValues);
@@ -430,9 +433,17 @@ export default function CreateRosterPage() {
                     />
 
                     {!includeAllHubMembers && (
-                      // todo: add hub member select modal (searchable, draggable list to set position of members in roster)
-                      <Button type="button" variant="outline">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsSelectMembersOpen(true)}
+                      >
                         Select hub members
+                        {members && members.length > 0 && (
+                          <span className="ml-2 text-xs">
+                            ({members.length} selected)
+                          </span>
+                        )}
                       </Button>
                     )}
                   </div>
@@ -461,6 +472,16 @@ export default function CreateRosterPage() {
           </CardContent>
         </Card>
       </main>
+
+      <SelectMembersModal
+        open={isSelectMembersOpen}
+        onOpenChange={setIsSelectMembersOpen}
+        members={hubData.hub.members}
+        onSave={(selectedMembers) => {
+          setValue("members", selectedMembers, { shouldValidate: true });
+        }}
+        initialSelected={members}
+      />
     </div>
   );
 }
