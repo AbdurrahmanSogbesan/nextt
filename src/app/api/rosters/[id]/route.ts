@@ -5,6 +5,17 @@ import { patchRosterSchema } from "@/lib/schemas";
 import { ROTATION_CHOICE } from "@prisma/client";
 import { getNextDate } from "@/lib/utils";
 import { z } from "zod";
+import { createUserMap } from "@/lib/clerk-utils";
+import { getCurrentPeriod } from "@/lib/utils";
+import { MemberUserDetails } from "@/types";
+import type {
+  GetRosterResponse,
+  ActivityItem,
+  CommentItem,
+  MemberWithProfile,
+  Rotation,
+  TurnWithUser,
+} from "@/types/roster";
 
 function clean<T extends object>(obj: T): Partial<T> {
   return Object.fromEntries(
@@ -20,6 +31,227 @@ async function assertAdmin(rosterId: number, userId: string) {
     throw Object.assign(new Error("Forbidden"), { status: 403 });
   }
 }
+
+export async function GET(
+  _req: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { userId } = await auth(); // viewer may be null
+    const { id } = await context.params;
+    const now = new Date();
+
+    // 1) Load roster base (members, activities, comments)
+    const roster = await prisma.roster.findUnique({
+      where: { id: Number(id) },
+      select: {
+        id: true,
+        uuid: true,
+        name: true,
+        description: true,
+        isPrivate: true,
+        enablePushNotifications: true,
+        enableEmailNotifications: true,
+        start: true,
+        end: true,
+        rotationType: true,
+        hubId: true,
+        createdById: true,
+        currentTurnId: true,
+        nextTurnId: true,
+        nextDate: true,
+        status: true,
+        isDeleted: true,
+        rotationOption: true,
+        members: {
+          where: { isDeleted: false },
+          orderBy: { position: "asc" },
+          select: {
+            rosterUserId: true,
+            position: true,
+            isAdmin: true,
+            dateJoined: true,
+          },
+        },
+        activities: {
+          where: { isDeleted: false },
+          orderBy: { id: "desc" },
+          select: {
+            id: true,
+            title: true,
+            createdAt: true,
+            meta: true,
+            actorId: true,
+            body: true,
+            hubId: true,
+            rosterId: true,
+            isDeleted: true,
+          },
+        },
+        comments: {
+          where: { isDeleted: false },
+          orderBy: { id: "desc" },
+          select: {
+            id: true,
+            uuid: true,
+            userId: true,
+            content: true,
+            createdAt: true,
+            rosterId: true,
+            isDeleted: true,
+          },
+        },
+      },
+    });
+
+    if (!roster || roster.isDeleted) {
+      return NextResponse.json({ error: "Roster not found" }, { status: 404 });
+    }
+
+    // 2) First 5 upcoming turns by dueDate (>= now)
+    const upcomingTurns = await prisma.turn.findMany({
+      where: { rosterId: roster.id, isDeleted: false, dueDate: { gte: now } },
+      orderBy: { dueDate: "asc" },
+      take: 5,
+      select: {
+        uuid: true,
+        status: true,
+        dueDate: true,
+        rosterMembershipRosterUserId: true,
+      },
+    });
+
+    const currentTurn = upcomingTurns[0] ?? null;
+    const nextTurn = upcomingTurns[1] ?? null;
+
+    // 3) Is viewer scheduled in this period?
+    const { start: periodStart, end: periodEnd, kind } = getCurrentPeriod(
+      (roster.rotationType as Rotation) ?? "DAILY",
+      now
+    );
+
+    const isScheduledThisPeriod = userId
+      ? !!(await prisma.turn.findFirst({
+          where: {
+            rosterId: roster.id,
+            isDeleted: false,
+            rosterMembershipRosterUserId: userId,
+            dueDate: { gte: periodStart, lte: periodEnd },
+          },
+          select: { id: true },
+        }))
+      : false;
+
+    // 4) Build Clerk user map (members + upcoming turn assignees + activity actors + comment users)
+    const ids = new Set<string>();
+    roster.members.forEach((m) => ids.add(m.rosterUserId));
+    upcomingTurns.forEach((t) => t.rosterMembershipRosterUserId && ids.add(t.rosterMembershipRosterUserId));
+    roster.activities.forEach((a) => a.actorId && ids.add(a.actorId));
+    roster.comments.forEach((c) => c.userId && ids.add(c.userId));
+    const userMap = await createUserMap(Array.from(ids)); // Map<string, MemberUserDetails>
+
+    const profileOf = (uid?: string | null): MemberUserDetails | null => {
+      if (!uid) return null;
+      return userMap.get(uid) ?? null;
+    };
+
+    const toTurnWithUser = (t: (typeof upcomingTurns)[number]): TurnWithUser => {
+      const p = profileOf(t.rosterMembershipRosterUserId);
+      const name = p ? `${p.firstName} ${p.lastName}`.trim() || p.email : t.rosterMembershipRosterUserId;
+      return {
+        turnUuid: t.uuid,
+        status: t.status,
+        dueDate: t.dueDate ? t.dueDate.toISOString() : null,
+        user: {
+          userId: t.rosterMembershipRosterUserId ?? null,
+          name: name ?? null,
+          avatarUrl: p?.avatarUrl ?? null,
+        },
+      };
+    };
+
+    const activities: ActivityItem[] = roster.activities.map((a) => ({
+      id: a.id,
+      title: a.title,
+      createdAt: a.createdAt.toISOString(),
+      meta: a.meta ?? undefined,
+      actorId: a.actorId ?? null,
+      body: a.body ?? null,
+      hubId: a.hubId ?? null,
+      rosterId: a.rosterId ?? null,
+      isDeleted: a.isDeleted,
+      actor: profileOf(a.actorId),
+    }));
+
+    const comments: CommentItem[] = roster.comments.map((c) => ({
+      id: c.id,
+      uuid: c.uuid,
+      userId: c.userId ?? null,
+      content: c.content,
+      createdAt: c.createdAt.toISOString(),
+      rosterId: c.rosterId ?? null,
+      isDeleted: c.isDeleted,
+      profile: profileOf(c.userId),
+    }));
+
+    // 5) Build final response
+    const resp: GetRosterResponse = {
+      viewer: {
+        userId: userId ?? null,
+        isScheduledThisPeriod,
+        period: {
+          start: periodStart.toISOString(),
+          end: periodEnd.toISOString(),
+          kind: (roster.rotationType as Rotation) ?? kind,
+        },
+      },
+      scheduleNow: currentTurn ? toTurnWithUser(currentTurn) : null,
+      scheduleNext: nextTurn ? toTurnWithUser(nextTurn) : null,
+      members: roster.members.map<MemberWithProfile>((m) => {
+        const p = profileOf(m.rosterUserId) ?? {
+          firstName: "",
+          lastName: "",
+          email: m.rosterUserId,
+          avatarUrl: null,
+        };
+        return {
+          userId: m.rosterUserId,
+          position: m.position,
+          isAdmin: m.isAdmin,
+          dateJoined: m.dateJoined.toISOString(),
+          profile: p,
+        };
+      }),
+      nextTurns: upcomingTurns.map(toTurnWithUser),
+      activities,
+      comments,
+      roster: {
+        uuid: roster.uuid,
+        name: roster.name,
+        description: roster.description,
+        isPrivate: roster.isPrivate,
+        enablePushNotifications: roster.enablePushNotifications,
+        enableEmailNotifications: roster.enableEmailNotifications,
+        start: roster.start.toISOString(),
+        end: roster.end.toISOString(),
+        rotationType: roster.rotationType as Rotation,
+        hubId: roster.hubId,
+        createdById: roster.createdById,
+        currentTurnId: roster.currentTurnId,
+        nextTurnId: roster.nextTurnId,
+        nextDate: roster.nextDate ? roster.nextDate.toISOString() : null,
+        status: roster.status,
+        rotationOption: roster.rotationOption,
+      },
+    };
+
+    return NextResponse.json(resp);
+  } catch (err) {
+    console.error("Error fetching roster page:", err);
+    return NextResponse.json({ error: "Failed to fetch roster" }, { status: 500 });
+  }
+}
+
 
 export async function PATCH(
   req: Request,

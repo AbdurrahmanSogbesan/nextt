@@ -1,5 +1,6 @@
 import { MemberUserDetails } from "@/types";
 import { ROTATION_CHOICE, ROTATION_TYPE, RotationOption } from "@prisma/client";
+import type { Rotation } from "@/types/roster";
 import { clsx, type ClassValue } from "clsx";
 import { format, isToday, isTomorrow, isYesterday } from "date-fns";
 import { twMerge } from "tailwind-merge";
@@ -67,4 +68,27 @@ export function getNextDate(
   const dateString = now.toISOString() as unknown;
 
   return dateString as Date;
+}
+
+
+export function startOfDay(d: Date) { const x = new Date(d); x.setUTCHours(0,0,0,0); return x; }
+export function endOfDay(d: Date) { const x = new Date(d); x.setUTCHours(23,59,59,999); return x; }
+
+export function startOfISOWeek(d: Date) {
+  const x = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const day = x.getUTCDay() || 7; if (day !== 1) x.setUTCDate(x.getUTCDate() - (day - 1));
+  return x;
+}
+export function endOfISOWeek(d: Date) {
+  const s = startOfISOWeek(d);
+  const e = new Date(s);
+  e.setUTCDate(e.getUTCDate() + 6);
+  e.setUTCHours(23,59,59,999);
+  return e;
+}
+
+export function getCurrentPeriod(rotationType: Rotation, now: Date) {
+  return rotationType === "WEEKLY"
+    ? { start: startOfISOWeek(now), end: endOfISOWeek(now), kind: "WEEKLY" as const }
+    : { start: startOfDay(now), end: endOfDay(now), kind: "DAILY" as const };
 }
