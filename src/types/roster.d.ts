@@ -47,11 +47,6 @@ export type CommentItem = {
 };
 
 export type GetRosterResponse = {
-  viewer: {
-    userId: string | null;
-    isScheduledThisPeriod: boolean;
-    period: { start: string; end: string; kind: Rotation };
-  };
   scheduleNow: TurnWithUser | null;
   scheduleNext: TurnWithUser | null;
   members: MemberWithProfile[];

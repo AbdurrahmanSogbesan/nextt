@@ -86,9 +86,3 @@ export function endOfISOWeek(d: Date) {
   e.setUTCHours(23,59,59,999);
   return e;
 }
-
-export function getCurrentPeriod(rotationType: Rotation, now: Date) {
-  return rotationType === "WEEKLY"
-    ? { start: startOfISOWeek(now), end: endOfISOWeek(now), kind: "WEEKLY" as const }
-    : { start: startOfDay(now), end: endOfDay(now), kind: "DAILY" as const };
-}

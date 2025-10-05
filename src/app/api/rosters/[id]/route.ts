@@ -1,13 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
-import { patchRosterSchema } from "@/lib/schemas";
-import { ROTATION_CHOICE } from "@prisma/client";
-import { getNextDate } from "@/lib/utils";
-import { z } from "zod";
 import { createUserMap } from "@/lib/clerk-utils";
-import { getCurrentPeriod } from "@/lib/utils";
-import { MemberUserDetails } from "@/types";
 import type {
   GetRosterResponse,
   ActivityItem,
@@ -16,6 +10,10 @@ import type {
   Rotation,
   TurnWithUser,
 } from "@/types/roster";
+import { patchRosterSchema } from "@/lib/schemas";
+import { ROTATION_CHOICE } from "@prisma/client";
+import z from "zod";
+import { getNextDate } from "@/lib/utils";
 
 function clean<T extends object>(obj: T): Partial<T> {
   return Object.fromEntries(
@@ -37,32 +35,16 @@ export async function GET(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { userId } = await auth(); // viewer may be null
+    const { userId } = await auth();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { id } = await context.params;
     const now = new Date();
 
-    // 1) Load roster base (members, activities, comments)
+    // 1) Roster + relations
     const roster = await prisma.roster.findUnique({
       where: { id: Number(id) },
-      select: {
-        id: true,
-        uuid: true,
-        name: true,
-        description: true,
-        isPrivate: true,
-        enablePushNotifications: true,
-        enableEmailNotifications: true,
-        start: true,
-        end: true,
-        rotationType: true,
-        hubId: true,
-        createdById: true,
-        currentTurnId: true,
-        nextTurnId: true,
-        nextDate: true,
-        status: true,
-        isDeleted: true,
-        rotationOption: true,
+      include: {
         members: {
           where: { isDeleted: false },
           orderBy: { position: "asc" },
@@ -101,6 +83,14 @@ export async function GET(
             isDeleted: true,
           },
         },
+        rotationOption: {
+          select: {
+            rotation: true,
+            unit: true,
+            id: true,
+            rosterId: true,
+          },
+        },
       },
     });
 
@@ -108,7 +98,7 @@ export async function GET(
       return NextResponse.json({ error: "Roster not found" }, { status: 404 });
     }
 
-    // 2) First 5 upcoming turns by dueDate (>= now)
+    // 2) First 5 upcoming turns by dueDate
     const upcomingTurns = await prisma.turn.findMany({
       where: { rosterId: roster.id, isDeleted: false, dueDate: { gte: now } },
       orderBy: { dueDate: "asc" },
@@ -121,127 +111,72 @@ export async function GET(
       },
     });
 
-    const currentTurn = upcomingTurns[0] ?? null;
-    const nextTurn = upcomingTurns[1] ?? null;
+    const [currentTurn, nextTurn] = [upcomingTurns[0] ?? null, upcomingTurns[1] ?? null];
 
-    // 3) Is viewer scheduled in this period?
-    const { start: periodStart, end: periodEnd, kind } = getCurrentPeriod(
-      (roster.rotationType as Rotation) ?? "DAILY",
-      now
-    );
+    // 3) Build Clerk user map
+    const ids = Array.from(new Set(roster.members.map(m => m.rosterUserId)));
+    const userMap = await createUserMap(ids);
 
-    const isScheduledThisPeriod = userId
-      ? !!(await prisma.turn.findFirst({
-          where: {
-            rosterId: roster.id,
-            isDeleted: false,
-            rosterMembershipRosterUserId: userId,
-            dueDate: { gte: periodStart, lte: periodEnd },
-          },
-          select: { id: true },
-        }))
-      : false;
-
-    // 4) Build Clerk user map (members + upcoming turn assignees + activity actors + comment users)
-    const ids = new Set<string>();
-    roster.members.forEach((m) => ids.add(m.rosterUserId));
-    upcomingTurns.forEach((t) => t.rosterMembershipRosterUserId && ids.add(t.rosterMembershipRosterUserId));
-    roster.activities.forEach((a) => a.actorId && ids.add(a.actorId));
-    roster.comments.forEach((c) => c.userId && ids.add(c.userId));
-    const userMap = await createUserMap(Array.from(ids)); // Map<string, MemberUserDetails>
-
-    const profileOf = (uid?: string | null): MemberUserDetails | null => {
+    const nameOf = (uid?: string | null) => {
       if (!uid) return null;
-      return userMap.get(uid) ?? null;
+      const u = userMap.get(uid);
+      const full = u ? `${u.firstName} ${u.lastName}`.trim() : null;
+      return full || u?.email || uid;
     };
+    const avatarOf = (uid?: string | null) => (uid ? userMap.get(uid)?.avatarUrl ?? null : null);
 
-    const toTurnWithUser = (t: (typeof upcomingTurns)[number]): TurnWithUser => {
-      const p = profileOf(t.rosterMembershipRosterUserId);
-      const name = p ? `${p.firstName} ${p.lastName}`.trim() || p.email : t.rosterMembershipRosterUserId;
-      return {
-        turnUuid: t.uuid,
-        status: t.status,
-        dueDate: t.dueDate ? t.dueDate.toISOString() : null,
-        user: {
-          userId: t.rosterMembershipRosterUserId ?? null,
-          name: name ?? null,
-          avatarUrl: p?.avatarUrl ?? null,
-        },
-      };
-    };
-
-    const activities: ActivityItem[] = roster.activities.map((a) => ({
-      id: a.id,
-      title: a.title,
-      createdAt: a.createdAt.toISOString(),
-      meta: a.meta ?? undefined,
-      actorId: a.actorId ?? null,
-      body: a.body ?? null,
-      hubId: a.hubId ?? null,
-      rosterId: a.rosterId ?? null,
-      isDeleted: a.isDeleted,
-      actor: profileOf(a.actorId),
-    }));
-
-    const comments: CommentItem[] = roster.comments.map((c) => ({
-      id: c.id,
-      uuid: c.uuid,
-      userId: c.userId ?? null,
-      content: c.content,
-      createdAt: c.createdAt.toISOString(),
-      rosterId: c.rosterId ?? null,
-      isDeleted: c.isDeleted,
-      profile: profileOf(c.userId),
-    }));
-
-    // 5) Build final response
-    const resp: GetRosterResponse = {
-      viewer: {
-        userId: userId ?? null,
-        isScheduledThisPeriod,
-        period: {
-          start: periodStart.toISOString(),
-          end: periodEnd.toISOString(),
-          kind: (roster.rotationType as Rotation) ?? kind,
-        },
+    const toTurnWithUser = (t: (typeof upcomingTurns)[number]): TurnWithUser => ({
+      turnUuid: t.uuid,
+      status: t.status,
+      dueDate: t.dueDate ? t.dueDate.toISOString() : null,
+      user: {
+        userId: t.rosterMembershipRosterUserId ?? null,
+        name: nameOf(t.rosterMembershipRosterUserId),
+        avatarUrl: avatarOf(t.rosterMembershipRosterUserId),
       },
-      scheduleNow: currentTurn ? toTurnWithUser(currentTurn) : null,
-      scheduleNext: nextTurn ? toTurnWithUser(nextTurn) : null,
-      members: roster.members.map<MemberWithProfile>((m) => {
-        const p = profileOf(m.rosterUserId) ?? {
+    });
+
+    const activities: ActivityItem[] = roster.activities.map(({ createdAt, actorId, ...rest }) => ({
+      ...rest,
+      createdAt: createdAt.toISOString(),
+      actorId: actorId ?? null,
+      actor: actorId ? userMap.get(actorId) ?? null : null,
+    }));
+
+    const comments: CommentItem[] = roster.comments.map(({ createdAt, userId, ...rest }) => ({
+      ...rest,
+      createdAt: createdAt.toISOString(),
+      userId: userId ?? null,
+      profile: userId ? userMap.get(userId) ?? null : null,
+    }));
+
+    const members = roster.members.map<MemberWithProfile>(({ dateJoined, rosterUserId, ...rest }) => ({
+      ...rest,
+      userId: rosterUserId,
+      dateJoined: dateJoined.toISOString(),
+      profile:
+        userMap.get(rosterUserId) ?? {
           firstName: "",
           lastName: "",
-          email: m.rosterUserId,
+          email: rosterUserId,
           avatarUrl: null,
-        };
-        return {
-          userId: m.rosterUserId,
-          position: m.position,
-          isAdmin: m.isAdmin,
-          dateJoined: m.dateJoined.toISOString(),
-          profile: p,
-        };
-      }),
+        },
+    }));
+
+    // 4) Final response
+    const resp: GetRosterResponse = {
+      scheduleNow: currentTurn ? toTurnWithUser(currentTurn) : null,
+      scheduleNext: nextTurn ? toTurnWithUser(nextTurn) : null,
+      members,
       nextTurns: upcomingTurns.map(toTurnWithUser),
       activities,
       comments,
       roster: {
-        uuid: roster.uuid,
-        name: roster.name,
-        description: roster.description,
-        isPrivate: roster.isPrivate,
-        enablePushNotifications: roster.enablePushNotifications,
-        enableEmailNotifications: roster.enableEmailNotifications,
+        ...roster,
         start: roster.start.toISOString(),
         end: roster.end.toISOString(),
-        rotationType: roster.rotationType as Rotation,
-        hubId: roster.hubId,
-        createdById: roster.createdById,
-        currentTurnId: roster.currentTurnId,
-        nextTurnId: roster.nextTurnId,
         nextDate: roster.nextDate ? roster.nextDate.toISOString() : null,
-        status: roster.status,
-        rotationOption: roster.rotationOption,
+        rotationType: roster.rotationType as Rotation,
       },
     };
 
@@ -251,6 +186,7 @@ export async function GET(
     return NextResponse.json({ error: "Failed to fetch roster" }, { status: 500 });
   }
 }
+
 
 
 export async function PATCH(
