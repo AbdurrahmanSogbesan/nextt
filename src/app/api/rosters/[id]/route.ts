@@ -36,7 +36,9 @@ export async function GET(
 ) {
   try {
     const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const { id } = await context.params;
     const now = new Date();
@@ -111,10 +113,10 @@ export async function GET(
       },
     });
 
-    const [currentTurn, nextTurn] = [upcomingTurns[0] ?? null, upcomingTurns[1] ?? null];
+    const [currentTurn, nextTurn] = upcomingTurns;
 
     // 3) Build Clerk user map
-    const ids = Array.from(new Set(roster.members.map(m => m.rosterUserId)));
+    const ids = Array.from(new Set(roster.members.map((m) => m.rosterUserId)));
     const userMap = await createUserMap(ids);
 
     const nameOf = (uid?: string | null) => {
@@ -123,9 +125,12 @@ export async function GET(
       const full = u ? `${u.firstName} ${u.lastName}`.trim() : null;
       return full || u?.email || uid;
     };
-    const avatarOf = (uid?: string | null) => (uid ? userMap.get(uid)?.avatarUrl ?? null : null);
+    const avatarOf = (uid?: string | null) =>
+      uid ? userMap.get(uid)?.avatarUrl ?? null : null;
 
-    const toTurnWithUser = (t: (typeof upcomingTurns)[number]): TurnWithUser => ({
+    const toTurnWithUser = (
+      t: (typeof upcomingTurns)[number]
+    ): TurnWithUser => ({
       turnUuid: t.uuid,
       status: t.status,
       dueDate: t.dueDate ? t.dueDate.toISOString() : null,
@@ -136,32 +141,37 @@ export async function GET(
       },
     });
 
-    const activities: ActivityItem[] = roster.activities.map(({ createdAt, actorId, ...rest }) => ({
-      ...rest,
-      createdAt: createdAt.toISOString(),
-      actorId: actorId ?? null,
-      actor: actorId ? userMap.get(actorId) ?? null : null,
-    }));
+    const activities: ActivityItem[] = roster.activities.map(
+      ({ createdAt, actorId, ...rest }) => ({
+        ...rest,
+        createdAt: createdAt.toISOString(),
+        actorId: actorId ?? null,
+        actor: actorId ? userMap.get(actorId) ?? null : null,
+      })
+    );
 
-    const comments: CommentItem[] = roster.comments.map(({ createdAt, userId, ...rest }) => ({
-      ...rest,
-      createdAt: createdAt.toISOString(),
-      userId: userId ?? null,
-      profile: userId ? userMap.get(userId) ?? null : null,
-    }));
+    const comments: CommentItem[] = roster.comments.map(
+      ({ createdAt, userId, ...rest }) => ({
+        ...rest,
+        createdAt: createdAt.toISOString(),
+        userId: userId ?? null,
+        profile: userId ? userMap.get(userId) ?? null : null,
+      })
+    );
 
-    const members = roster.members.map<MemberWithProfile>(({ dateJoined, rosterUserId, ...rest }) => ({
-      ...rest,
-      userId: rosterUserId,
-      dateJoined: dateJoined.toISOString(),
-      profile:
-        userMap.get(rosterUserId) ?? {
+    const members = roster.members.map<MemberWithProfile>(
+      ({ dateJoined, rosterUserId, ...rest }) => ({
+        ...rest,
+        userId: rosterUserId,
+        dateJoined: dateJoined.toISOString(),
+        profile: userMap.get(rosterUserId) ?? {
           firstName: "",
           lastName: "",
           email: rosterUserId,
           avatarUrl: null,
         },
-    }));
+      })
+    );
 
     // 4) Final response
     const resp: GetRosterResponse = {
@@ -183,11 +193,12 @@ export async function GET(
     return NextResponse.json(resp);
   } catch (err) {
     console.error("Error fetching roster page:", err);
-    return NextResponse.json({ error: "Failed to fetch roster" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch roster" },
+      { status: 500 }
+    );
   }
 }
-
-
 
 export async function PATCH(
   req: Request,
