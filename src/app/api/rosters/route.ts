@@ -115,9 +115,11 @@ export async function POST(req: Request) {
         enableEmailNotifications: validated.enableEmailNotifications, // keep naming consistent with your model
         members: { create: membersToCreate },
         currentTurnId: membersToCreate?.[0]?.rosterUserId, // REPLACE or REMOVE when Turn Creation logic is done
-        nextTurnId: membersToCreate?.length === 1 // REPLACE or REMOVE With turn ID when Turn Creation logic is done.
-          ? membersToCreate[0].rosterUserId
-          : membersToCreate?.[1]?.rosterUserId,
+        nextTurnId:
+          membersToCreate?.length === 1 // REPLACE or REMOVE With turn ID when Turn Creation logic is done.
+            ? membersToCreate[0].rosterUserId
+            : membersToCreate?.[1]?.rosterUserId,
+        // no need for next date at this point, as it's set as we start the roster - but for UI sake, will leave it
         nextDate: getNextDate(validated.rotationType, validated.rotationOption),
       },
       select: { id: true },

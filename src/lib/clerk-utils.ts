@@ -29,3 +29,17 @@ export async function createUserMap(
     ])
   );
 }
+
+export async function getUserDetails(
+  userId: string
+): Promise<MemberUserDetails & { fullName: string }> {
+  const client = await clerkClient();
+  const user = await client.users.getUser(userId);
+  return {
+    firstName: user.firstName || "",
+    lastName: user.lastName || "",
+    email: user.emailAddresses[0]?.emailAddress || "",
+    avatarUrl: user.imageUrl,
+    fullName: user.fullName || "",
+  };
+}
