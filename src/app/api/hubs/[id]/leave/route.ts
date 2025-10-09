@@ -34,15 +34,33 @@ export async function POST(
       );
     }
 
+    // prevent leaving if this is the user's only active hub membership
+    const activeHubCount = await prisma.hubMembership.count({
+      where: { hubUserid: userId, isDeleted: false },
+    });
+    if (activeHubCount <= 1) {
+      return NextResponse.json(
+        { error: "Cannot leave your only hub" },
+        { status: 400 }
+      );
+    }
+
     // owner trying to leave -> attempt transfer to next-oldest member
     if (hub.ownerId && hub.ownerId === userId) {
-      const candidates = hub.members
-        .filter((m) => m.hubUserid !== userId && !m.isDeleted)
+      // prefer admin candidates first
+      const adminCandidates = hub.members
+        .filter((m) => m.hubUserid !== userId && !m.isDeleted && m.isAdmin)
         .sort((a, b) => a.dateJoined.getTime() - b.dateJoined.getTime());
+
+      const nonAdminCandidates = hub.members
+        .filter((m) => m.hubUserid !== userId && !m.isDeleted && !m.isAdmin)
+        .sort((a, b) => a.dateJoined.getTime() - b.dateJoined.getTime());
+
+      const candidates = adminCandidates.length > 0 ? adminCandidates : nonAdminCandidates;
 
       if (candidates.length === 0) {
         return NextResponse.json(
-          { error: "Hub owner cannot leave without transferring ownership — am oga mi" },
+          { error: "You’re the only member left, so the hub owner can’t leave." },
           { status: 400 }
         );
       }
@@ -63,7 +81,7 @@ export async function POST(
 
       return NextResponse.json({
         success: true,
-        message: `Ownership transferred to ${newOwner.hubUserid}. am oga mi`,
+        message: `Ownership transferred to ${newOwner.hubUserid}.`,
         newOwner: newOwner.hubUserid,
       });
     }
