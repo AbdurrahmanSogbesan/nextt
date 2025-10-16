@@ -10,6 +10,7 @@ type PrismaRoster = Prisma.RosterGetPayload<{
     comments: true;
     rotationOption: true;
     turns: true;
+    hub: true;
   };
 }>;
 
@@ -18,7 +19,7 @@ type RosterMember = PrismaRoster["members"][number] & {
 };
 
 type RosterTurn = PrismaRoster["turns"][number] & {
-  user: MemberUserDetails;
+  user: MemberUserDetails & { userId: string };
 };
 
 type RosterActivity = PrismaRoster["activities"][number] & {
@@ -32,13 +33,7 @@ type RosterComment = PrismaRoster["comments"][number] & {
 export type GetRosterResponse = {
   roster: Omit<
     PrismaRoster,
-    | "members"
-    | "activities"
-    | "comments"
-    | "turns"
-    | "start"
-    | "end"
-    | "nextDate"
+    "members" | "activities" | "comments" | "turns"
   > & {
     members: RosterMember[];
     activities: RosterActivity[];

@@ -63,3 +63,7 @@ export const patchRosterSchema = z.object({
     .optional(),
   members: z.array(MemberInput).optional(),
 });
+
+export const createRosterCommentSchema = z.object({
+  content: z.string().min(1).max(5000),
+});
