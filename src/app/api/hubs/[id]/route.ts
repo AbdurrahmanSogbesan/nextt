@@ -17,7 +17,7 @@ export async function GET(
     }
 
     const dbhub = await prisma.hub.findUnique({
-      where: { id: parseInt(id) },
+      where: { id: parseInt(id), isDeleted: false },
       include: {
         members: { orderBy: { dateJoined: "desc" } },
         rosters: {
@@ -63,7 +63,7 @@ export async function GET(
       })),
       activities: dbhub.activities.map((activity) => ({
         ...activity,
-        actor: activity.actorId ? getUserInfo(userMap, activity.actorId) : null,
+        actor: getUserInfo(userMap, activity.actorId ?? ""),
       })),
     };
 
