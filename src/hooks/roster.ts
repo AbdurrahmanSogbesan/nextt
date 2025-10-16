@@ -1,9 +1,68 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
-import { apiPost } from "@/lib/api";
-import { CreateRosterForm } from "@/types/roster";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { apiGet, apiPost } from "@/lib/api";
+import { CreateRosterForm, GetRosterResponse } from "@/types/roster";
 import { toast } from "sonner";
+import z from "zod";
+import { createRosterCommentSchema } from "@/lib/schemas";
+
+export function useGetRoster(rosterId: string) {
+  return useQuery({
+    queryKey: ["roster", rosterId],
+    queryFn: () => apiGet<GetRosterResponse>(`/api/rosters/${rosterId}`),
+  });
+}
+
+export function useStartRoster(rosterId: string) {
+  return useMutation({
+    mutationKey: ["startRoster", rosterId],
+    mutationFn: async () => {
+      await apiPost(`/api/rosters/${rosterId}/start`);
+    },
+    onSuccess: (data, variables, onMutateResult, context) => {
+      toast.success("Roster started successfully");
+      context.client.invalidateQueries({ queryKey: ["roster", rosterId] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to start roster");
+    },
+  });
+}
+
+export function useCompleteTurn(rosterId: string, onSuccess?: () => void) {
+  return useMutation({
+    mutationKey: ["completeTurn", rosterId],
+    mutationFn: async (turnId: number) => {
+      await apiPost(`/api/rosters/${rosterId}/complete-turn`, { turnId });
+    },
+    onSuccess: (data, variables, onMutateResult, context) => {
+      toast.success("Turn completed successfully");
+      context.client.invalidateQueries({ queryKey: ["roster", rosterId] });
+      onSuccess?.();
+    },
+    onError: (error: Error) => {
+      console.error("Error completing turn:", error);
+      toast.error(error.message || "Failed to complete turn");
+    },
+  });
+}
+
+export function useAddComment(rosterId: string) {
+  return useMutation({
+    mutationKey: ["addComment", rosterId],
+    mutationFn: async (data: z.infer<typeof createRosterCommentSchema>) => {
+      await apiPost(`/api/rosters/${rosterId}/comment`, data);
+    },
+    onSuccess: (data, variables, onMutateResult, context) => {
+      toast.success("Comment added successfully");
+      context.client.invalidateQueries({ queryKey: ["roster", rosterId] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to add comment");
+    },
+  });
+}
 
 export function useCreateRoster(onSuccess: (id: string) => void) {
   return useMutation({
