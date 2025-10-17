@@ -3,14 +3,7 @@
 import { notFound, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
-import {
-  Activity,
-  MoreHorizontal,
-  Pencil,
-  Plus,
-  Settings,
-  Trash,
-} from "lucide-react";
+import { Activity, MoreHorizontal, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import MemberCard from "@/components/MemberCard";
 import { accent } from "@/lib/theme";
@@ -32,7 +25,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import TurnCard from "@/components/TurnCard";
@@ -96,15 +88,6 @@ export default function RosterDashboard() {
                     <Pencil className="mr-2 h-4 w-4" />
                     Edit roster
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-destructive">
-                    <Trash className="mr-2 h-4 w-4" />
-                    Delete roster
-                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -118,13 +101,12 @@ export default function RosterDashboard() {
           <RosterTurnPrompt
             rosterName={roster.name}
             dueDate={roster.nextDate}
-            onComplete={() =>
-              completeTurn.mutate(
-                roster.turns.find(
-                  (t) => t.rosterMembershipRosterUserId === roster.currentTurnId
-                )?.id as number
-              )
-            }
+            onComplete={() => {
+              const currentTurnId = roster.turns.find(
+                (t) => t.rosterMembershipRosterUserId === roster.currentTurnId
+              )?.id as number;
+              completeTurn.mutate(currentTurnId);
+            }}
             theme={theme}
             isCompleting={completeTurn.isPending}
           />
@@ -132,7 +114,7 @@ export default function RosterDashboard() {
 
         {/* Schedule/Turns section */}
         <section className="space-y-3">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             <TurnCard
               title="Current"
               rightText={
@@ -225,7 +207,7 @@ export default function RosterDashboard() {
         {/* Activities */}
         <section className="space-y-3">
           <h2 className="text-lg font-medium">Activities</h2>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {roster.activities.length > 0 ? (
               roster.activities
                 .slice(0, 5)
@@ -236,6 +218,7 @@ export default function RosterDashboard() {
                     body={a.body ?? ""}
                     actor={a.actor}
                     createdAt={a.createdAt}
+                    variant="primary"
                   />
                 ))
             ) : (
@@ -256,7 +239,7 @@ export default function RosterDashboard() {
 
         <CommentSection
           comments={roster.comments}
-          onAddComment={(content) => addComment.mutate({ content })}
+          addCommentMutation={addComment}
         />
       </main>
     </div>

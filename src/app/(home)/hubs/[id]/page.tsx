@@ -29,6 +29,7 @@ import { useAuth } from "@clerk/nextjs";
 import Loading from "@/components/Loading";
 import { getUserInfo } from "@/lib/utils";
 import { useGetHub, useUpdateLastVisitStatus } from "@/hooks/hub";
+import { GetHubResponse, type HubActivity } from "@/types/hub";
 
 export default function HubDashboard() {
   const { userId } = useAuth();
@@ -188,7 +189,7 @@ export default function HubDashboard() {
             {hub.rosters.length > 0 ? (
               hub.rosters.slice(0, 3).map((r) => (
                 <Link key={r.id} href={`/hubs/${hub.id}/rosters/${r.id}`}>
-                  <div className="group flex items-center justify-between rounded-xl border bg-card px-4 py-3 shadow-sm transition hover:shadow">
+                  <div className="group flex items-center justify-between rounded-xl border bg-card px-4 py-3 hover:bg-muted/60">
                     <div className="flex items-center gap-3">
                       <div
                         className={`grid h-9 w-9 place-items-center rounded-xl ${theme.softBg} ring-1 ring-border`}
@@ -289,35 +290,9 @@ export default function HubDashboard() {
           <div className="space-y-3">
             {hub.activities.length > 0 ? (
               // todo: add load more button
-              hub.activities.slice(0, 5).map((a) => (
-                <div
-                  key={a.id}
-                  className="flex items-center justify-between rounded-xl border bg-card px-4 py-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage src={a.actor?.avatarUrl || ""} />
-                      <AvatarFallback>
-                        <Initials
-                          name={`${a.actor?.firstName} ${a.actor?.lastName}`}
-                        />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="text-sm">
-                      <p className="font-medium">{a.title || "Activity"}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {a.body || a.title}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(a.createdAt).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </div>
-                </div>
-              ))
+              hub.activities
+                .slice(0, 5)
+                .map((a) => <HubActivity key={a.id} activity={a} hub={hub} />)
             ) : (
               <div className="w-full flex flex-col items-center gap-6 py-8">
                 <Activity
@@ -334,6 +309,52 @@ export default function HubDashboard() {
           </div>
         </section>
       </main>
+    </div>
+  );
+}
+
+function HubActivity({
+  activity,
+  hub,
+}: {
+  activity: HubActivity;
+  hub: GetHubResponse["hub"];
+}) {
+  const rosterName = hub.rosters.find((r) => r.id === activity.rosterId)?.name;
+  return (
+    <div
+      className={
+        "flex justify-between rounded-xl border px-5 py-4 border-indigo-600/60 bg-indigo-100/15"
+      }
+    >
+      <div className="flex gap-3 align-text-top">
+        <Avatar className="size-10">
+          <AvatarImage src={activity.actor.avatarUrl || ""} />
+          <AvatarFallback>
+            <Initials
+              name={`${activity.actor.firstName} ${activity.actor.lastName}`}
+            />
+          </AvatarFallback>
+        </Avatar>
+        <div className="">
+          <p className="text-xl font-medium">{activity.title}</p>
+          <p className="text-black/40 text-sm">{rosterName}</p>
+        </div>
+      </div>
+      <div className="flex flex-col items-end gap-2">
+        <div
+          className={
+            "text-xs text-foreground border bg-white rounded-lg p-[10px] h-fit w-fit border-indigo-600/60"
+          }
+        >
+          {new Date(activity.createdAt).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </div>
+
+        <p className="text-black/60">{activity.body}</p>
+      </div>
     </div>
   );
 }

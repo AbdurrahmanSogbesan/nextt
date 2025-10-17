@@ -9,18 +9,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import Initials from "./Initials";
 import { accent } from "@/lib/theme";
 
-interface RosterScheduleProps {
-  members: RosterMember[];
-  currentTurnId: string | null;
-  rotationType: ROTATION_CHOICE;
-  rotationOption?: Pick<RotationOption, "rotation" | "unit"> | null;
-  nextDate: Date | null;
-  onStartRoster?: () => void;
-  isStarted: boolean;
-  theme?: ReturnType<typeof accent>;
-  isStarting: boolean;
-}
-
 export default function RosterSchedule({
   members,
   currentTurnId,
@@ -31,7 +19,17 @@ export default function RosterSchedule({
   isStarted,
   theme,
   isStarting,
-}: RosterScheduleProps) {
+}: {
+  members: RosterMember[];
+  currentTurnId: string | null;
+  rotationType: ROTATION_CHOICE;
+  rotationOption?: Pick<RotationOption, "rotation" | "unit"> | null;
+  nextDate: Date | null;
+  onStartRoster?: () => void;
+  isStarted: boolean;
+  theme?: ReturnType<typeof accent>;
+  isStarting: boolean;
+}) {
   const { userId } = useAuth();
 
   if (!isStarted) {
@@ -82,8 +80,7 @@ export default function RosterSchedule({
   });
 
   return (
-    <div className="space-y-3">
-      {/* Current */}
+    <div className="space-y-4">
       <ScheduleCard
         label="Current"
         userName={
