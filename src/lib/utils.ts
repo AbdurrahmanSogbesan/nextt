@@ -38,9 +38,10 @@ export function getUserInfo(
 
 export function getNextDate(
   rotationType: ROTATION_CHOICE,
-  rotationOption?: Pick<RotationOption, "rotation" | "unit"> | null
+  rotationOption?: Pick<RotationOption, "rotation" | "unit"> | null,
+  startDate?: Date | null
 ) {
-  const now = new Date();
+  const now = startDate ? new Date(startDate) : new Date();
 
   // Change date based on rotation type
   if (rotationType === ROTATION_CHOICE.DAILY) {

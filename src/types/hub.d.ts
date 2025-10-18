@@ -22,8 +22,8 @@ type HubRoster = Omit<PrismaHub["rosters"][number], "members"> & {
   members: RosterMember[];
 };
 
-type HubActivity = Omit<PrismaHub["activities"][number], "actor"> & {
-  actor: MemberUserDetails | null;
+type HubActivity = PrismaHub["activities"][number] & {
+  actor: MemberUserDetails;
 };
 
 export type GetHubResponse = {

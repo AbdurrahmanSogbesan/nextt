@@ -3,10 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { createUserMap } from "@/lib/clerk-utils";
 import z from "zod";
-
-const createCommentSchema = z.object({
-  content: z.string().min(1).max(5000),
-});
+import { createRosterCommentSchema } from "@/lib/schemas";
 
 export async function POST(
   req: Request,
@@ -19,7 +16,7 @@ export async function POST(
     }
 
     const body = await req.json();
-    const data = createCommentSchema.parse(body);
+    const data = createRosterCommentSchema.parse(body);
 
     const { id } = await context.params;
     const rosterId = parseInt(id);
@@ -78,6 +75,9 @@ export async function POST(
         { status: 400 }
       );
     }
-    return NextResponse.json({ error: "Failed to create comment" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to create comment" },
+      { status: 500 }
+    );
   }
 }

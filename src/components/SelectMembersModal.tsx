@@ -42,14 +42,6 @@ type SelectedMember = {
   position: number;
 };
 
-interface SelectMembersModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  members: HubMember[];
-  onSave: (selectedMembers: SelectedMember[]) => void;
-  initialSelected?: SelectedMember[];
-}
-
 function SortableMemberItem({
   member,
   position,
@@ -167,7 +159,13 @@ export default function SelectMembersModal({
   members,
   onSave,
   initialSelected = [],
-}: SelectMembersModalProps) {
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  members: HubMember[];
+  onSave: (selectedMembers: SelectedMember[]) => void;
+  initialSelected?: SelectedMember[];
+}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>(() =>
     initialSelected.sort((a, b) => a.position - b.position).map((s) => s.userId)

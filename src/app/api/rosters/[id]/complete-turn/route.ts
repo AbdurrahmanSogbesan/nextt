@@ -23,29 +23,31 @@ async function getNextMemberships(
   roster: RosterWithMembers,
   currentPosition: number
 ) {
-  // Get next and future turn members
-  const upcomingMembers = await prisma.rosterMembership.findMany({
+  const memberCount = roster.members.length;
+
+  // Calculate next position with wrap-around (1-indexed)
+  const nextPosition = currentPosition >= memberCount ? 1 : currentPosition + 1;
+
+  // Calculate future position with wrap-around (1-indexed)
+  const futurePosition = nextPosition >= memberCount ? 1 : nextPosition + 1;
+
+  // Get both members in a single query
+  const members = await prisma.rosterMembership.findMany({
     where: {
       rosterId: roster.id,
       isDeleted: false,
       position: {
-        in: [
-          // Handle wrap-around for both next and future positions
-          currentPosition + 1 > roster.members.length ? 1 : currentPosition + 1,
-          currentPosition + 2 > roster.members.length
-            ? (currentPosition + 2) % roster.members.length || 1
-            : currentPosition + 2,
-        ],
+        in: [nextPosition, futurePosition],
       },
     },
-    orderBy: { position: "asc" },
   });
 
-  if (upcomingMembers.length !== 2) {
-    throw new Error(`Expected 2 next members, found ${upcomingMembers.length}`);
-  }
+  const nextMember = members.find((m) => m.position === nextPosition);
+  const futureMember = members.find((m) => m.position === futurePosition);
 
-  const [nextMember, futureMember] = upcomingMembers;
+  if (!nextMember || !futureMember) {
+    throw new Error("Could not find next members");
+  }
 
   return {
     nextMember,
@@ -204,7 +206,7 @@ export async function POST(
 
       // Send notifications to:
       // - All roster members
-      tx.notification.create({
+      await tx.notification.create({
         data: {
           users: roster.members.map((m) => m.rosterUserId),
           body: `${currentMemberDetails.firstName}'s turn is complete!`,
@@ -213,7 +215,7 @@ export async function POST(
       });
 
       // - Next person on roster (next turn)
-      tx.notification.create({
+      await tx.notification.create({
         data: {
           users: [nextMember.rosterUserId],
           body: "You are up nextt!",
@@ -222,8 +224,7 @@ export async function POST(
         },
       });
 
-      // Create activity
-      tx.activity.create({
+      await tx.activity.create({
         data: {
           title: "Turn Completed!",
           body: `${currentMemberDetails.firstName} completed their turn`,
@@ -235,7 +236,6 @@ export async function POST(
 
       return NextResponse.json({
         success: true,
-        // type is Turn from prisma client
         turn: newTurn,
       });
     });
