@@ -3,8 +3,10 @@
 import { apiGet, apiPatch, apiPost } from "@/lib/api";
 import {
   CreateHubForm,
+  CreateInviteParams,
   GetHubMembersResponse,
   GetHubResponse,
+  HubInvite,
   UpdateHubMemberRoleParams,
   UpdateMemberRoleResponse,
 } from "@/types/hub";
@@ -90,6 +92,27 @@ export function useRemoveHubMember(hubId: string, onSuccess: () => void) {
     onSuccess,
     onError: (error: Error) => {
       toast.error(error.message || "Failed to remove member");
+    },
+  });
+}
+
+export function useCreateInvite(onSuccess: () => void) {
+  return useMutation({
+    mutationKey: ["createInvite"],
+    mutationFn: async (data: CreateInviteParams) => {
+      const response = await apiPost<{ invite: HubInvite }>(
+        "/api/invite",
+        data
+      );
+      return response.invite;
+    },
+    onSuccess: () => {
+      // todo: invalidate get invites query
+      toast.success("Invite created successfully");
+      onSuccess();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to create invite");
     },
   });
 }
