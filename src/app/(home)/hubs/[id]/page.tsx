@@ -270,6 +270,7 @@ export default function HubDashboard() {
             <div
               className="grid place-items-center h-full rounded-2xl border border-dashed bg-background/60 p-6 hover:bg-background"
               onClick={() => setShowInviteModal(true)}
+              role="button"
             >
               <div className="flex flex-col items-center gap-3">
                 <div

@@ -33,7 +33,9 @@ export async function GET(
       return NextResponse.json({ error: "Hub not found" }, { status: 404 });
     }
 
-    const isMember = dbhub.members.some((m) => m.hubUserid === userId);
+    const isMember = dbhub.members.some(
+      (m) => m.hubUserid === userId && !m.isDeleted
+    );
     if (!isMember && dbhub.visibility === "PRIVATE") {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
