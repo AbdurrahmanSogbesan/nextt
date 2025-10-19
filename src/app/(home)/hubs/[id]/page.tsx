@@ -30,10 +30,14 @@ import Loading from "@/components/Loading";
 import { getUserInfo } from "@/lib/utils";
 import { useGetHub, useUpdateLastVisitStatus } from "@/hooks/hub";
 import { GetHubResponse, type HubActivity } from "@/types/hub";
+import { useState } from "react";
+import InviteModal from "@/components/InviteModal";
 
 export default function HubDashboard() {
   const { userId } = useAuth();
   const { id } = useParams<{ id: string }>();
+
+  const [showInviteModal, setShowInviteModal] = useState(false);
 
   const { data, isLoading } = useGetHub(id);
 
@@ -96,12 +100,13 @@ export default function HubDashboard() {
             </div>
 
             <div className="flex gap-2">
-              <Link href={`/hubs/${hub.id}/invite`}>
-                <Button className="gap-2">
-                  <UserPlus className="h-4 w-4" />
-                  Invite to hub
-                </Button>
-              </Link>
+              <Button
+                className="gap-2"
+                onClick={() => setShowInviteModal(true)}
+              >
+                <UserPlus className="h-4 w-4" />
+                Invite to hub
+              </Button>
               <Link href={`/hubs/${hub.id}/rosters/create`}>
                 <Button variant="outline" className="gap-2">
                   <Plus className="h-4 w-4" />
@@ -258,29 +263,24 @@ export default function HubDashboard() {
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {hub.members.slice(0, 3).map((m) => {
-              return (
-                <MemberCard
-                  key={m.uuid}
-                  member={m}
-                  btnText="Message"
-                  // onBtnClick={() => {}}
-                />
-              );
+              return <MemberCard key={m.uuid} member={m} btnText="Message" />;
             })}
 
             {/* Add member */}
-            <Link href={`/hubs/${hub.id}/invite`}>
-              <div className="grid place-items-center h-full rounded-2xl border border-dashed bg-background/60 p-6 hover:bg-background">
-                <div className="flex flex-col items-center gap-3">
-                  <div
-                    className={`grid h-10 w-10 place-items-center rounded-full ${theme.softBg}`}
-                  >
-                    <Plus className="h-5 w-5 opacity-80" />
-                  </div>
-                  <p className="text-sm">Add a member</p>
+            <div
+              className="grid place-items-center h-full rounded-2xl border border-dashed bg-background/60 p-6 hover:bg-background"
+              onClick={() => setShowInviteModal(true)}
+              role="button"
+            >
+              <div className="flex flex-col items-center gap-3">
+                <div
+                  className={`grid h-10 w-10 place-items-center rounded-full ${theme.softBg}`}
+                >
+                  <Plus className="h-5 w-5 opacity-80" />
                 </div>
+                <p className="text-sm">Add a member</p>
               </div>
-            </Link>
+            </div>
           </div>
         </section>
 
@@ -309,6 +309,12 @@ export default function HubDashboard() {
           </div>
         </section>
       </main>
+
+      <InviteModal
+        show={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+        title="Send Invitation"
+      />
     </div>
   );
 }

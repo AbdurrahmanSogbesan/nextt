@@ -49,3 +49,13 @@ export type CreateHubForm = z.infer<typeof createHubSchema>;
 export type UpdateHubMemberRoleParams = z.infer<
   typeof updateHubMemberRoleSchema
 >;
+
+export type CreateInviteParams = {
+  email: string;
+  hubId: string;
+  rosterId?: string;
+};
+
+export type HubInvite = Prisma.InviteGetPayload<{
+  include: { hub: true; roster: true };
+}>;
