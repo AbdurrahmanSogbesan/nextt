@@ -12,6 +12,7 @@ import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import Initials from "./Initials";
+import { cn } from "@/lib/utils";
 
 export default function MemberCard({
   member,
@@ -20,6 +21,8 @@ export default function MemberCard({
   dropdownItems,
   role,
   isUser,
+  variant = "normal",
+  btnLoading = false,
 }: {
   member: { user: MemberUserDetails };
   btnText?: string;
@@ -31,12 +34,20 @@ export default function MemberCard({
   }>;
   role?: "ADMIN" | "MEMBER";
   isUser?: boolean;
+  variant?: "normal" | "small";
+  btnLoading?: boolean;
 }) {
   const fullName = `${member.user.firstName} ${member.user.lastName}`;
+  const isSmall = variant === "small";
+
   return (
-    <Card className="rounded-2xl relative">
+    <Card className={cn("rounded-2xl relative", isSmall && "py-3")}>
       {dropdownItems && (
-        <div className="absolute top-3 right-3">
+        <div
+          className={
+            isSmall ? "absolute top-2 right-2" : "absolute top-3 right-3"
+          }
+        >
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -61,8 +72,13 @@ export default function MemberCard({
           </DropdownMenu>
         </div>
       )}
-      <CardContent className="py-5 flex flex-col items-center gap-6">
-        <Avatar className="size-[92px] shrink-0">
+      <CardContent
+        className={cn(
+          "flex flex-col items-center",
+          isSmall ? "py-3 px-4 gap-3" : "py-5 gap-6"
+        )}
+      >
+        <Avatar className={cn("shrink-0", isSmall ? "size-16" : "size-[92px]")}>
           <AvatarImage src={member.user.avatarUrl || ""} />
           <AvatarFallback>
             <Initials name={fullName} />
@@ -76,13 +92,24 @@ export default function MemberCard({
             {member.user.email}
           </p>
           {role && (
-            <p className="text-xs text-muted-foreground/80 capitalize">
+            <p
+              className={cn(
+                "text-muted-foreground/80 capitalize",
+                isSmall ? "text-[10px]" : "text-xs"
+              )}
+            >
               {role.toLowerCase()}
             </p>
           )}
         </div>
         {btnText && (
-          <Button variant="secondary" className="w-full" onClick={onBtnClick}>
+          <Button
+            variant="secondary"
+            size={isSmall ? "sm" : "default"}
+            className="w-full"
+            onClick={onBtnClick}
+            loading={btnLoading}
+          >
             {btnText}
           </Button>
         )}

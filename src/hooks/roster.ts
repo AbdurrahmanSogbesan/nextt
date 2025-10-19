@@ -2,7 +2,12 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiGet, apiPost } from "@/lib/api";
-import { CreateRosterForm, GetRosterResponse } from "@/types/roster";
+import {
+  AddRosterMemberParams,
+  AddRosterMemberResponse,
+  CreateRosterForm,
+  GetRosterResponse,
+} from "@/types/roster";
 import { toast } from "sonner";
 import z from "zod";
 import { createRosterCommentSchema } from "@/lib/schemas";
@@ -77,6 +82,28 @@ export function useCreateRoster(onSuccess: (id: string) => void) {
       toast.error("Failed to create roster", {
         description: "Please try again",
       });
+    },
+  });
+}
+
+export function useAddRosterMember(rosterId: string, onSuccess: () => void) {
+  return useMutation({
+    mutationKey: ["addRosterMember", rosterId],
+    mutationFn: async (data: AddRosterMemberParams) => {
+      const response = await apiPost<AddRosterMemberResponse>(
+        `/api/rosters/${rosterId}/members`,
+        data
+      );
+      return response.member;
+    },
+    onSuccess: (data, variables, onMutateResult, context) => {
+      context.client.invalidateQueries({ queryKey: ["roster", rosterId] });
+
+      toast.success("Member added successfully");
+      onSuccess();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to add member");
     },
   });
 }

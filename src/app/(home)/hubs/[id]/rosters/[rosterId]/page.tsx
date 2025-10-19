@@ -28,10 +28,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import TurnCard from "@/components/TurnCard";
+import { useState } from "react";
+import AddMemberModal from "@/components/AddMemberModal";
+import InviteModal from "@/components/InviteModal";
 
 export default function RosterDashboard() {
   const { userId } = useAuth();
   const { rosterId, id: hubId } = useParams<{ rosterId: string; id: string }>();
+  const [showModal, setShowModal] = useState<"invite" | "addMember" | null>(
+    null
+  );
+
+  const handleCloseModal = () => {
+    setShowModal(null);
+  };
 
   const { data, isLoading } = useGetRoster(rosterId);
 
@@ -173,18 +183,19 @@ export default function RosterDashboard() {
             ))}
 
             {/* Add member */}
-            <Link href={`/hubs/${hubId}/rosters/${rosterId}/invite`}>
-              <div className="grid place-items-center h-full rounded-2xl border border-dashed bg-background/60 p-6 hover:bg-background">
-                <div className="flex flex-col items-center gap-3">
-                  <div
-                    className={`grid h-10 w-10 place-items-center rounded-full ${theme.softBg}`}
-                  >
-                    <Plus className="h-5 w-5 opacity-80" />
-                  </div>
-                  <p className="text-sm">Add a member</p>
+            <button
+              onClick={() => setShowModal("addMember")}
+              className="grid place-items-center h-full rounded-2xl border border-dashed bg-background/60 p-6 hover:bg-background transition-colors"
+            >
+              <div className="flex flex-col items-center gap-3">
+                <div
+                  className={`grid h-10 w-10 place-items-center rounded-full ${theme.softBg}`}
+                >
+                  <Plus className="h-5 w-5 opacity-80" />
                 </div>
+                <p className="text-sm">Add a member</p>
               </div>
-            </Link>
+            </button>
           </div>
         </section>
 
@@ -242,6 +253,21 @@ export default function RosterDashboard() {
           addCommentMutation={addComment}
         />
       </main>
+
+      <AddMemberModal
+        isOpen={showModal === "addMember"}
+        handleClose={handleCloseModal}
+        hubId={hubId}
+        rosterMembers={roster.members}
+        onInviteClick={() => setShowModal("invite")}
+      />
+
+      <InviteModal
+        show={showModal === "invite"}
+        onClose={handleCloseModal}
+        title="Send Invitation"
+        isRosterInvite
+      />
     </div>
   );
 }

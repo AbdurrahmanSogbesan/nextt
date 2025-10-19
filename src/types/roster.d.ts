@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, RosterMembership } from "@prisma/client";
 import { createRosterSchema } from "@/lib/schemas";
 import { z } from "zod";
 import { MemberUserDetails } from ".";
@@ -44,3 +44,16 @@ export type GetRosterResponse = {
 };
 
 export type CreateRosterForm = z.infer<typeof createRosterSchema>;
+
+export type GetRosterMembersResponse = {
+  roster: Roster;
+  members: RosterMember[];
+};
+
+export type AddRosterMemberResponse = {
+  member: RosterMembership;
+};
+
+export type AddRosterMemberParams = {
+  rosterUserId: string;
+};
