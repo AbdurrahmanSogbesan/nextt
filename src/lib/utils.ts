@@ -69,3 +69,7 @@ export function getNextDate(
 
   return dateString as Date;
 }
+
+export const convertArrayToString = (value: unknown) => {
+  return Array.isArray(value) ? value.join(", ") : value;
+};

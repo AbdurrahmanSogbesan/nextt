@@ -1,12 +1,12 @@
-"use client";
-
-import { apiGet, apiPatch, apiPost } from "@/lib/api";
+import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
 import {
   CreateHubForm,
   CreateInviteParams,
   GetHubMembersResponse,
   GetHubResponse,
   HubInvite,
+  RemoveHubMemberParams,
+  RemoveHubMemberResponse,
   UpdateHubMemberRoleParams,
   UpdateMemberRoleResponse,
 } from "@/types/hub";
@@ -15,7 +15,7 @@ import { toast } from "sonner";
 
 export function useGetHub(hubId: string) {
   return useQuery({
-    queryKey: ["hub", hubId],
+    queryKey: ["getHub", hubId],
     queryFn: () => apiGet<GetHubResponse>(`/api/hubs/${hubId}`),
   });
 }
@@ -34,7 +34,7 @@ export function useUpdateLastVisitStatus(
 export function useGetHubMembers(hubId: string) {
   return useQuery({
     queryKey: ["getHubMembers", hubId],
-    queryFn: () => apiGet<GetHubMembersResponse>(`/api/hubs/members/${hubId}`),
+    queryFn: () => apiGet<GetHubMembersResponse>(`/api/hubs/${hubId}/members`),
   });
 }
 
@@ -65,7 +65,7 @@ export function useUpdateHubMemberRole(
       if (!hubId) throw new Error("Hub ID is required");
 
       const resp = await apiPatch<UpdateMemberRoleResponse>(
-        `/api/hubs/members/${hubId}`,
+        `/api/hubs/${hubId}/members`,
         data
       );
 
@@ -85,11 +85,21 @@ export function useUpdateHubMemberRole(
 export function useRemoveHubMember(hubId: string, onSuccess: () => void) {
   return useMutation({
     mutationKey: ["removeHubMember", hubId],
-    mutationFn: async () => {
-      //   TODO: Implement remove member API
-      //   return Promise.resolve();
+    mutationFn: async (data: RemoveHubMemberParams) => {
+      const resp = await apiDelete<RemoveHubMemberResponse>(
+        `/api/hubs/${hubId}/members`,
+        {
+          data,
+        }
+      );
+      return resp.member;
     },
-    onSuccess,
+    onSuccess(data, variables, onMutateResult, context) {
+      context.client.invalidateQueries({ queryKey: ["getHubMembers", hubId] });
+      context.client.invalidateQueries({ queryKey: ["getHub", hubId] });
+      toast.success("Member removed successfully");
+      onSuccess();
+    },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to remove member");
     },

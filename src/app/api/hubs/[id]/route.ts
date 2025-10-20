@@ -19,11 +19,16 @@ export async function GET(
     const dbhub = await prisma.hub.findUnique({
       where: { id: parseInt(id), isDeleted: false },
       include: {
-        members: { orderBy: { dateJoined: "desc" } },
+        members: {
+          where: { isDeleted: false },
+          orderBy: { dateJoined: "desc" },
+        },
         rosters: {
-          include: { members: true },
+          where: { isDeleted: false },
+          include: { members: { where: { isDeleted: false } } },
         },
         activities: {
+          where: { isDeleted: false },
           orderBy: { createdAt: "desc" },
         },
       },
@@ -31,13 +36,6 @@ export async function GET(
 
     if (!dbhub) {
       return NextResponse.json({ error: "Hub not found" }, { status: 404 });
-    }
-
-    const isMember = dbhub.members.some(
-      (m) => m.hubUserid === userId && !m.isDeleted
-    );
-    if (!isMember && dbhub.visibility === "PRIVATE") {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     const uniqueIds = new Set([

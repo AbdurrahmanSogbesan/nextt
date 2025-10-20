@@ -19,7 +19,7 @@ export default function RosterTurnPrompt({
 }) {
   return (
     <section className="space-y-3">
-      <h2 className="text-2xl font-semibold text-foreground">
+      <h2 className="text-xl font-semibold text-accent-foreground">
         Hey!!! You&apos;re up
       </h2>
 

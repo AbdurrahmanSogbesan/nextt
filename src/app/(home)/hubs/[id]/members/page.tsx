@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { HubMember } from "@/types/hub";
 import { useAuth } from "@clerk/nextjs";
 import { UserPlus } from "lucide-react";
-import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
@@ -16,35 +15,38 @@ import {
   useRemoveHubMember,
   useUpdateHubMemberRole,
 } from "@/hooks/hub";
+import InviteModal from "@/components/InviteModal";
 
 export default function HubMembersPage() {
   const { id } = useParams<{ id: string }>();
 
   const { userId } = useAuth();
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [openModal, setOpenModal] = useState<
+    "role" | "remove" | "invite" | null
+  >(null);
   const [modalConfig, setModalConfig] = useState<{
     title: string;
     description: string;
     onConfirm: () => void;
     confirmText?: string;
     variant?: "default" | "destructive";
+    type: "role" | "remove";
   } | null>(null);
 
   const { mutateAsync: updateMemberRole, isPending: isUpdatingRole } =
     useUpdateHubMemberRole(id, () => {
-      setIsModalOpen(false);
+      setOpenModal(null);
     });
 
   const { mutateAsync: removeMember, isPending: isRemovingMember } =
-    // todo: impl remove member API
     useRemoveHubMember(id, () => {
-      setIsModalOpen(false);
+      setOpenModal(null);
     });
 
   const showConfirmationModal = (config: typeof modalConfig) => {
     setModalConfig(config);
-    setIsModalOpen(true);
+    setOpenModal(config?.type ?? null);
   };
 
   const handleRoleChange = (member: HubMember, newRole: "ADMIN" | "MEMBER") => {
@@ -76,6 +78,7 @@ export default function HubMembersPage() {
           isAdmin,
         });
       },
+      type: "role",
     });
   };
 
@@ -91,8 +94,9 @@ export default function HubMembersPage() {
       confirmText: "Remove Member",
       variant: "destructive",
       onConfirm: () => {
-        removeMember();
+        removeMember({ hubUserId: member.hubUserid });
       },
+      type: "remove",
     });
   };
 
@@ -122,12 +126,10 @@ export default function HubMembersPage() {
                 </p>
               </div>
 
-              <Link href={`/hubs/${id}/invite`}>
-                <Button className="gap-2">
-                  <UserPlus className="h-4 w-4" />
-                  Invite Hub Member
-                </Button>
-              </Link>
+              <Button className="gap-2" onClick={() => setOpenModal("invite")}>
+                <UserPlus className="h-4 w-4" />
+                Invite Hub Member
+              </Button>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -191,8 +193,8 @@ export default function HubMembersPage() {
       {/* Confirmation Modal */}
       {modalConfig && (
         <ConfirmationModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          isOpen={openModal === "role" || openModal === "remove"}
+          onClose={() => setOpenModal(null)}
           onConfirm={modalConfig.onConfirm}
           title={modalConfig.title}
           description={modalConfig.description}
@@ -201,6 +203,12 @@ export default function HubMembersPage() {
           isLoading={isUpdatingRole || isRemovingMember}
         />
       )}
+
+      <InviteModal
+        show={openModal === "invite"}
+        onClose={() => setOpenModal(null)}
+        title="Invite Hub Member"
+      />
     </div>
   );
 }
