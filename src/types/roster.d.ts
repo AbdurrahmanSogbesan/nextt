@@ -14,7 +14,7 @@ type PrismaRoster = Prisma.RosterGetPayload<{
   };
 }>;
 
-type RosterMember = PrismaRoster["members"][number] & {
+export type RosterMember = PrismaRoster["members"][number] & {
   user: MemberUserDetails;
 };
 
@@ -50,10 +50,23 @@ export type GetRosterMembersResponse = {
   members: RosterMember[];
 };
 
+export type RemoveRosterMemberResponse = {
+  member: RosterMembership;
+};
+
 export type AddRosterMemberResponse = {
   member: RosterMembership;
 };
 
 export type AddRosterMemberParams = {
   rosterUserId: string;
+};
+
+export type UpdateRosterMemberRoleParams = {
+  rosterUserId: string;
+  isAdmin: boolean;
+};
+
+export type UpdateRosterMemberRoleResponse = {
+  member: RosterMembership;
 };

@@ -36,7 +36,7 @@ export type GetHubResponse = {
 };
 
 export type UpdateMemberRoleResponse = {
-  membership: Pick<HubMember, "hubUserid" | "isAdmin" | "dateJoined">;
+  membership: HubMembership;
 };
 
 export type GetHubMembersResponse = {

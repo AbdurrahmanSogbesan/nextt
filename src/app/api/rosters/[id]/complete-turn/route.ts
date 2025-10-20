@@ -1,9 +1,8 @@
-import { getUserDetails } from "@/lib/clerk-utils";
+import { getNextMemberships, getUserDetails } from "@/lib/clerk-utils";
 import prisma from "@/lib/prisma";
 import { getNextDate } from "@/lib/utils";
 import { auth } from "@clerk/nextjs/server";
 import {
-  Prisma,
   RosterMembership,
   ROTATION_CHOICE,
   STATUS_CHOICE,
@@ -11,49 +10,6 @@ import {
 } from "@prisma/client";
 import { isAfter } from "date-fns";
 import { NextResponse } from "next/server";
-
-type RosterWithMembers = Prisma.RosterGetPayload<{
-  include: {
-    members: true;
-    rotationOption: true;
-  };
-}>;
-
-async function getNextMemberships(
-  roster: RosterWithMembers,
-  currentPosition: number
-) {
-  const memberCount = roster.members.length;
-
-  // Calculate next position with wrap-around (1-indexed)
-  const nextPosition = currentPosition >= memberCount ? 1 : currentPosition + 1;
-
-  // Calculate future position with wrap-around (1-indexed)
-  const futurePosition = nextPosition >= memberCount ? 1 : nextPosition + 1;
-
-  // Get both members in a single query
-  const members = await prisma.rosterMembership.findMany({
-    where: {
-      rosterId: roster.id,
-      isDeleted: false,
-      position: {
-        in: [nextPosition, futurePosition],
-      },
-    },
-  });
-
-  const nextMember = members.find((m) => m.position === nextPosition);
-  const futureMember = members.find((m) => m.position === futurePosition);
-
-  if (!nextMember || !futureMember) {
-    throw new Error("Could not find next members");
-  }
-
-  return {
-    nextMember,
-    futureMember,
-  };
-}
 
 export async function POST(
   req: Request,

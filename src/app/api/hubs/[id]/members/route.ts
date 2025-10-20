@@ -178,11 +178,7 @@ export async function PATCH(
     });
 
     return NextResponse.json({
-      membership: {
-        hubUserid: updatedMembership.hubUserid,
-        isAdmin: updatedMembership.isAdmin,
-        dateJoined: updatedMembership.dateJoined,
-      },
+      membership: updatedMembership,
     });
   } catch (error) {
     console.error("Error updating admin status:", error);
