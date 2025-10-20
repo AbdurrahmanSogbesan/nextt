@@ -92,7 +92,7 @@ export function useRemoveHubMember(hubId: string, onSuccess: () => void) {
           data,
         }
       );
-      return resp.member;
+      return resp.membership;
     },
     onSuccess(data, variables, onMutateResult, context) {
       context.client.invalidateQueries({ queryKey: ["getHubMembers", hubId] });

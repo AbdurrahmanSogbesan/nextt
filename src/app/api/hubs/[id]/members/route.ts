@@ -65,12 +65,12 @@ export async function DELETE(
     }
 
     // todo: handle removing of user from rosters and the logic for if deleted user was current or next in roster.
-    const deletedMember = await prisma.hubMembership.update({
+    const deletedMembership = await prisma.hubMembership.update({
       where: { hubId_hubUserid: { hubId, hubUserid: hubUserId } },
       data: { isDeleted: true, dateLeft: new Date() },
     });
 
-    return NextResponse.json({ member: deletedMember });
+    return NextResponse.json({ membership: deletedMembership });
   } catch (err) {
     console.error("Error removing hub member:", err);
     return NextResponse.json(

@@ -65,5 +65,5 @@ export type RemoveHubMemberParams = {
 };
 
 export type RemoveHubMemberResponse = {
-  member: HubMembership;
+  membership: HubMembership;
 };

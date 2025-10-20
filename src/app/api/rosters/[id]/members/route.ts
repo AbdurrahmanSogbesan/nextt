@@ -222,7 +222,6 @@ export async function PATCH(
 
     const body = await req.json();
 
-    console.log("body", body);
     const validatedData = updateRosterMemberRoleSchema.parse(body);
 
     const rosterId = parseInt(id);
