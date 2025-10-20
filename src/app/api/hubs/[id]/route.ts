@@ -3,6 +3,7 @@ import { createUserMap } from "@/lib/clerk-utils";
 import { getUserInfo } from "@/lib/utils";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { VISIBILITY_CHOICE } from "@prisma/client";
 
 export async function GET(
   request: Request,
@@ -36,6 +37,16 @@ export async function GET(
 
     if (!dbhub) {
       return NextResponse.json({ error: "Hub not found" }, { status: 404 });
+    }
+
+    // Access control: Only allow active members to access private hubs
+    if (dbhub.visibility === VISIBILITY_CHOICE.PRIVATE) {
+      const isActiveMember = dbhub.members.some(
+        (member) => member.hubUserid === userId
+      );
+      if (!isActiveMember) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
 
     const uniqueIds = new Set([
