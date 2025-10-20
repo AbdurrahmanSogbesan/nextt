@@ -1,4 +1,5 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
+import { convertArrayToString } from "./utils";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000",
@@ -23,6 +24,14 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error instanceof AxiosError) {
+      const message =
+        error.response?.data?.errorMessage ||
+        convertArrayToString(error.response?.data?.message) ||
+        error.response?.data?.error ||
+        error.message;
+      error.message = message;
+    }
     // if (error.response && error.response.status === 401) {
     //   // Redirect to login page
     // }

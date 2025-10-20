@@ -3,27 +3,33 @@
 import MemberCard from "@/components/MemberCard";
 import ConfirmationModal from "@/components/ConfirmationModal";
 import { Button } from "@/components/ui/button";
-import { HubMember } from "@/types/hub";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@clerk/nextjs";
-import { UserPlus } from "lucide-react";
-import { useState } from "react";
+import { UserPlus, Search } from "lucide-react";
+import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
 import Loading from "@/components/Loading";
 import {
-  useGetHubMembers,
-  useRemoveHubMember,
-  useUpdateHubMemberRole,
-} from "@/hooks/hub";
+  useGetRosterMembers,
+  useRemoveRosterMember,
+  useUpdateRosterMemberRole,
+} from "@/hooks/roster";
+import { RosterMember } from "@/types/roster";
 import InviteModal from "@/components/InviteModal";
+import AddMemberModal from "@/components/AddMemberModal";
 
-export default function HubMembersPage() {
-  const { id } = useParams<{ id: string }>();
+export default function RosterMembersPage() {
+  const { id: hubId, rosterId } = useParams<{
+    id: string;
+    rosterId: string;
+  }>();
 
   const { userId } = useAuth();
 
+  const [searchQuery, setSearchQuery] = useState("");
   const [openModal, setOpenModal] = useState<
-    "role" | "remove" | "invite" | null
+    "role" | "remove" | "invite" | "addMember" | null
   >(null);
   const [modalConfig, setModalConfig] = useState<{
     title: string;
@@ -35,12 +41,12 @@ export default function HubMembersPage() {
   } | null>(null);
 
   const { mutateAsync: updateMemberRole, isPending: isUpdatingRole } =
-    useUpdateHubMemberRole(id, () => {
+    useUpdateRosterMemberRole(rosterId, () => {
       setOpenModal(null);
     });
 
   const { mutateAsync: removeMember, isPending: isRemovingMember } =
-    useRemoveHubMember(id, () => {
+    useRemoveRosterMember(rosterId, () => {
       setOpenModal(null);
     });
 
@@ -49,7 +55,10 @@ export default function HubMembersPage() {
     setOpenModal(config?.type ?? null);
   };
 
-  const handleRoleChange = (member: HubMember, newRole: "ADMIN" | "MEMBER") => {
+  const handleRoleChange = (
+    member: RosterMember,
+    newRole: "ADMIN" | "MEMBER"
+  ) => {
     const isAdmin = newRole === "ADMIN";
     const currentRole = member.isAdmin ? "ADMIN" : "MEMBER";
 
@@ -58,7 +67,7 @@ export default function HubMembersPage() {
       return;
     }
 
-    if (member.hubUserid === userId && member.hubUserid !== hub?.ownerId) {
+    if (member.rosterUserId === userId) {
       toast.error("You cannot change your own role");
       return;
     }
@@ -74,7 +83,7 @@ export default function HubMembersPage() {
       variant: isAdmin ? "default" : "destructive",
       onConfirm: () => {
         updateMemberRole({
-          memberUserId: member.hubUserid,
+          rosterUserId: member.rosterUserId,
           isAdmin,
         });
       },
@@ -82,35 +91,49 @@ export default function HubMembersPage() {
     });
   };
 
-  const handleRemoveMember = (member: HubMember) => {
-    if (member.hubUserid === userId) {
-      toast.error("You cannot remove yourself from the hub");
+  const handleRemoveMember = (member: RosterMember) => {
+    if (member.rosterUserId === userId) {
+      toast.error("You cannot remove yourself from the roster");
       return;
     }
 
     showConfirmationModal({
       title: "Remove Member",
-      description: `Are you sure you want to remove ${member.user.firstName} ${member.user.lastName} from this hub?`,
+      description: `Are you sure you want to remove ${member.user.firstName} ${member.user.lastName} from this roster?`,
       confirmText: "Remove Member",
       variant: "destructive",
       onConfirm: () => {
-        removeMember({ hubUserId: member.hubUserid });
+        removeMember({ rosterUserId: member.rosterUserId });
       },
       type: "remove",
     });
   };
 
-  const { data, isLoading } = useGetHubMembers(id);
+  const { data, isLoading } = useGetRosterMembers(rosterId);
 
-  const { hub, members } = data || {};
+  const { roster, members } = data || {};
+
+  // Filter members based on search query
+  const filteredMembers = useMemo(() => {
+    if (!members) return [];
+    if (!searchQuery.trim()) return members;
+
+    const query = searchQuery.toLowerCase();
+    return members.filter((member) => {
+      const fullName =
+        `${member.user.firstName} ${member.user.lastName}`.toLowerCase();
+      const email = member.user.email.toLowerCase();
+      return fullName.includes(query) || email.includes(query);
+    });
+  }, [members, searchQuery]);
 
   if (isLoading) return <Loading />;
 
   return (
     <div className="min-h-screen">
-      {!hub || !members ? (
+      {!roster || !members ? (
         <div className="flex items-center justify-center min-h-screen">
-          <p className="text-sm text-muted-foreground">No hub found</p>
+          <p className="text-sm text-muted-foreground">No roster found</p>
         </div>
       ) : (
         <section>
@@ -118,48 +141,59 @@ export default function HubMembersPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-semibold tracking-tight">
-                  {hub?.name} Members
+                  {roster?.name} Members
                 </h1>
                 <p className="text-sm text-muted-foreground mt-2">
                   {members?.length} member{members?.length !== 1 ? "s" : ""} in
-                  this hub
+                  this roster
                 </p>
               </div>
 
-              <Button className="gap-2" onClick={() => setOpenModal("invite")}>
+              <Button
+                className="gap-2"
+                onClick={() => setOpenModal("addMember")}
+              >
                 <UserPlus className="h-4 w-4" />
-                Invite Hub Member
+                Add Member
               </Button>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {members && members.length > 0 ? (
-                members.map((member) => {
-                  // Check if current user is admin or hub owner
-                  const currentUserIsAdmin =
-                    hub?.ownerId === userId ||
-                    members.find((m) => m.hubUserid === userId)?.isAdmin;
+            {/* Search Bar */}
+            <div className="relative self-end max-w-[500px] w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search members by name or email..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 bg-background"
+              />
+            </div>
 
-                  // Check if this member is the hub owner
-                  const isHubOwner = member.hubUserid === hub?.ownerId;
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {filteredMembers && filteredMembers.length > 0 ? (
+                filteredMembers.map((member) => {
+                  // Check if current user is admin
+                  const currentUserMembership = members.find(
+                    (m) => m.rosterUserId === userId
+                  );
+                  const currentUserIsAdmin =
+                    currentUserMembership?.isAdmin || false;
 
                   // Check if this member is the current user
-                  const isCurrentUser = member.hubUserid === userId;
+                  const isCurrentUser = member.rosterUserId === userId;
 
                   // Logic for showing remove button:
                   // 1. Cannot remove yourself
-                  // 2. Cannot remove the hub owner
-                  // 3. Only admins and hub owner can remove others
-                  const canRemove =
-                    !isCurrentUser && !isHubOwner && currentUserIsAdmin;
+                  // 2. Only admins can remove others
+                  const canRemove = !isCurrentUser && currentUserIsAdmin;
 
                   return (
                     <MemberCard
                       key={member.uuid}
                       member={member}
-                      btnText={canRemove ? "Remove from Hub" : undefined}
+                      btnText={canRemove ? "Remove from Roster" : undefined}
                       dropdownItems={
-                        // Only show role change options if user is admin or hub owner
+                        // Only show role change options if user is admin
                         // and not trying to change their own role
                         canRemove
                           ? [
@@ -178,12 +212,18 @@ export default function HubMembersPage() {
                       }
                       role={member.isAdmin ? "ADMIN" : "MEMBER"}
                       onBtnClick={() => handleRemoveMember(member)}
-                      isUser={member.hubUserid === userId}
+                      isUser={member.rosterUserId === userId}
                     />
                   );
                 })
               ) : (
-                <div className="col-span-full">No members found</div>
+                <div className="col-span-full text-center py-8">
+                  <p className="text-sm text-muted-foreground">
+                    {searchQuery
+                      ? "No members found matching your search"
+                      : "No members found"}
+                  </p>
+                </div>
               )}
             </div>
           </div>
@@ -207,7 +247,16 @@ export default function HubMembersPage() {
       <InviteModal
         show={openModal === "invite"}
         onClose={() => setOpenModal(null)}
-        title="Invite Hub Member"
+        title="Invite Roster Member"
+        isRosterInvite
+      />
+
+      <AddMemberModal
+        isOpen={openModal === "addMember"}
+        handleClose={() => setOpenModal(null)}
+        hubId={hubId}
+        rosterMembers={roster.members}
+        onInviteClick={() => setOpenModal("invite")}
       />
     </div>
   );

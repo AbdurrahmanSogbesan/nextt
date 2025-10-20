@@ -19,6 +19,11 @@ export const updateHubMemberRoleSchema = z.object({
   memberUserId: z.string().min(1, "Member user ID is required"),
 });
 
+export const updateRosterMemberRoleSchema = z.object({
+  isAdmin: z.boolean(),
+  rosterUserId: z.string().min(1, "Roster user ID is required"),
+});
+
 const MemberInput = z.object({
   userId: z.string().min(1),
   position: z.number().int().positive(),

@@ -1,12 +1,14 @@
-"use client";
-
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
 import {
   AddRosterMemberParams,
   AddRosterMemberResponse,
   CreateRosterForm,
   GetRosterResponse,
+  GetRosterMembersResponse,
+  RemoveRosterMemberResponse,
+  UpdateRosterMemberRoleResponse,
+  UpdateRosterMemberRoleParams,
 } from "@/types/roster";
 import { toast } from "sonner";
 import z from "zod";
@@ -14,7 +16,7 @@ import { createRosterCommentSchema } from "@/lib/schemas";
 
 export function useGetRoster(rosterId: string) {
   return useQuery({
-    queryKey: ["roster", rosterId],
+    queryKey: ["getRoster", rosterId],
     queryFn: () => apiGet<GetRosterResponse>(`/api/rosters/${rosterId}`),
   });
 }
@@ -27,7 +29,7 @@ export function useStartRoster(rosterId: string) {
     },
     onSuccess: (data, variables, onMutateResult, context) => {
       toast.success("Roster started successfully");
-      context.client.invalidateQueries({ queryKey: ["roster", rosterId] });
+      context.client.invalidateQueries({ queryKey: ["getRoster", rosterId] });
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to start roster");
@@ -43,7 +45,7 @@ export function useCompleteTurn(rosterId: string, onSuccess?: () => void) {
     },
     onSuccess: (data, variables, onMutateResult, context) => {
       toast.success("Turn completed successfully");
-      context.client.invalidateQueries({ queryKey: ["roster", rosterId] });
+      context.client.invalidateQueries({ queryKey: ["getRoster", rosterId] });
       onSuccess?.();
     },
     onError: (error: Error) => {
@@ -61,7 +63,7 @@ export function useAddComment(rosterId: string) {
     },
     onSuccess: (data, variables, onMutateResult, context) => {
       toast.success("Comment added successfully");
-      context.client.invalidateQueries({ queryKey: ["roster", rosterId] });
+      context.client.invalidateQueries({ queryKey: ["getRoster", rosterId] });
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to add comment");
@@ -97,13 +99,79 @@ export function useAddRosterMember(rosterId: string, onSuccess: () => void) {
       return response.member;
     },
     onSuccess: (data, variables, onMutateResult, context) => {
-      context.client.invalidateQueries({ queryKey: ["roster", rosterId] });
+      context.client.invalidateQueries({ queryKey: ["getRoster", rosterId] });
 
       toast.success("Member added successfully");
       onSuccess();
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to add member");
+    },
+  });
+}
+
+export function useGetRosterMembers(rosterId: string) {
+  return useQuery({
+    queryKey: ["rosterMembers", rosterId],
+    queryFn: () =>
+      apiGet<GetRosterMembersResponse>(`/api/rosters/${rosterId}/members`),
+  });
+}
+
+export function useRemoveRosterMember(
+  rosterId: string,
+  onSuccess?: () => void
+) {
+  return useMutation({
+    mutationKey: ["removeRosterMember", rosterId],
+    mutationFn: async ({ rosterUserId }: { rosterUserId: string }) => {
+      const response = await apiDelete<RemoveRosterMemberResponse>(
+        `/api/rosters/${rosterId}/members`,
+        {
+          data: { rosterUserId },
+        }
+      );
+
+      return response.member;
+    },
+    onSuccess: (data, variables, onMutateResult, context) => {
+      toast.success("Member removed successfully");
+      context.client.invalidateQueries({
+        queryKey: ["rosterMembers", rosterId],
+      });
+      context.client.invalidateQueries({ queryKey: ["getRoster", rosterId] });
+      onSuccess?.();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to remove member");
+    },
+  });
+}
+
+export function useUpdateRosterMemberRole(
+  rosterId: string,
+  onSuccess?: () => void
+) {
+  return useMutation({
+    mutationKey: ["updateRosterMemberRole", rosterId],
+    mutationFn: async (params: UpdateRosterMemberRoleParams) => {
+      const resp = await apiPatch<UpdateRosterMemberRoleResponse>(
+        `/api/rosters/${rosterId}/members`,
+        params
+      );
+
+      return resp.member;
+    },
+    onSuccess: (data, variables, onMutateResult, context) => {
+      toast.success("Member role updated successfully");
+      context.client.invalidateQueries({
+        queryKey: ["rosterMembers", rosterId],
+      });
+      context.client.invalidateQueries({ queryKey: ["getRoster", rosterId] });
+      onSuccess?.();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update member role");
     },
   });
 }

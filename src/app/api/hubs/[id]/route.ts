@@ -3,6 +3,7 @@ import { createUserMap } from "@/lib/clerk-utils";
 import { getUserInfo } from "@/lib/utils";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { VISIBILITY_CHOICE } from "@prisma/client";
 
 export async function GET(
   request: Request,
@@ -19,11 +20,16 @@ export async function GET(
     const dbhub = await prisma.hub.findUnique({
       where: { id: parseInt(id), isDeleted: false },
       include: {
-        members: { orderBy: { dateJoined: "desc" } },
+        members: {
+          where: { isDeleted: false },
+          orderBy: { dateJoined: "desc" },
+        },
         rosters: {
-          include: { members: true },
+          where: { isDeleted: false },
+          include: { members: { where: { isDeleted: false } } },
         },
         activities: {
+          where: { isDeleted: false },
           orderBy: { createdAt: "desc" },
         },
       },
@@ -33,11 +39,14 @@ export async function GET(
       return NextResponse.json({ error: "Hub not found" }, { status: 404 });
     }
 
-    const isMember = dbhub.members.some(
-      (m) => m.hubUserid === userId && !m.isDeleted
-    );
-    if (!isMember && dbhub.visibility === "PRIVATE") {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    // Access control: Only allow active members to access private hubs
+    if (dbhub.visibility === VISIBILITY_CHOICE.PRIVATE) {
+      const isActiveMember = dbhub.members.some(
+        (member) => member.hubUserid === userId
+      );
+      if (!isActiveMember) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
 
     const uniqueIds = new Set([

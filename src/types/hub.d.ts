@@ -1,4 +1,4 @@
-import { Hub, Prisma } from "@prisma/client";
+import { Hub, HubMembership, Prisma } from "@prisma/client";
 import { MemberUserDetails } from ".";
 import { createHubSchema, updateHubMemberRoleSchema } from "@/lib/schemas";
 
@@ -36,7 +36,7 @@ export type GetHubResponse = {
 };
 
 export type UpdateMemberRoleResponse = {
-  membership: Pick<HubMember, "hubUserid" | "isAdmin" | "dateJoined">;
+  membership: HubMembership;
 };
 
 export type GetHubMembersResponse = {
@@ -59,3 +59,11 @@ export type CreateInviteParams = {
 export type HubInvite = Prisma.InviteGetPayload<{
   include: { hub: true; roster: true };
 }>;
+
+export type RemoveHubMemberParams = {
+  hubUserId: string;
+};
+
+export type RemoveHubMemberResponse = {
+  membership: HubMembership;
+};

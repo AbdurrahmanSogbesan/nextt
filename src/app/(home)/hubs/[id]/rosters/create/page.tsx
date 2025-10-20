@@ -36,6 +36,7 @@ import { useGetHub } from "@/hooks/hub";
 import { CreateRosterForm } from "@/types/roster";
 import { useCreateRoster } from "@/hooks/roster";
 import SelectMembersModal from "@/components/SelectMembersModal";
+import { useQueryClient } from "@tanstack/react-query";
 
 const rotationChoiceLabels: Record<ROTATION_CHOICE, string> = {
   DAILY: "Daily",
@@ -54,6 +55,7 @@ const rotationTypeLabels: Record<ROTATION_TYPE, string> = {
 export default function CreateRosterPage() {
   const router = useRouter();
   const { id: hubId } = useParams<{ id: string }>();
+  const queryClient = useQueryClient();
   const [isSelectMembersOpen, setIsSelectMembersOpen] = useState(false);
 
   const {
@@ -100,6 +102,7 @@ export default function CreateRosterPage() {
   const { mutate: createRoster, isPending: isCreatingRoster } = useCreateRoster(
     (id) => {
       router.push(`/hubs/${hubId}/rosters/${id}`);
+      queryClient.invalidateQueries({ queryKey: ["getHub", hubId] });
     }
   );
 
