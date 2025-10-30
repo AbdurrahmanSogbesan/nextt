@@ -101,6 +101,15 @@ export async function POST(
       },
     });
 
+    await prisma.notification.create({
+      data: {
+        users: [rosterUserId],
+        body: `You have been added to ${roster.name}`,
+        roster: { connect: { id: rosterId } },
+        hub: { connect: { id: roster.hubId } },
+      },
+    });
+
     return NextResponse.json({ member });
   } catch (error) {
     console.error("Error adding member to roster:", error);
