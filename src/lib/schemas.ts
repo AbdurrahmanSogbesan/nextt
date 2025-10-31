@@ -73,6 +73,6 @@ export const createRosterCommentSchema = z.object({
   content: z.string().min(1).max(5000),
 });
 
-export const acceptInviteSchema = z.object({
+export const updateInviteSchema = z.object({
   response: z.enum(["ACCEPT", "REJECT"]),
 });

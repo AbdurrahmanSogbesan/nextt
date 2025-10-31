@@ -73,3 +73,8 @@ export function getNextDate(
 export const convertArrayToString = (value: unknown) => {
   return Array.isArray(value) ? value.join(", ") : value;
 };
+
+export function getFullName(user: MemberUserDetails | undefined): string {
+  if (!user) return "";
+  return `${user.firstName} ${user.lastName}`;
+}

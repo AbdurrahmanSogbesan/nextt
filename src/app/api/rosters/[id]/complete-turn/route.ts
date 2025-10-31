@@ -121,6 +121,7 @@ export async function POST(
             users: roster.members.map((m) => m.rosterUserId),
             body: "Roster has been completed!",
             roster: { connect: { id: roster.id } },
+            hub: { connect: { id: roster.hubId } },
           },
         });
 
@@ -167,6 +168,7 @@ export async function POST(
           users: roster.members.map((m) => m.rosterUserId),
           body: `${currentMemberDetails.firstName}'s turn is complete!`,
           roster: { connect: { id: roster.id } },
+          hub: { connect: { id: roster.hubId } },
         },
       });
 
@@ -177,6 +179,7 @@ export async function POST(
           body: "You are up nextt!",
           turn: { connect: { id: newTurn.id } },
           roster: { connect: { id: roster.id } },
+          hub: { connect: { id: roster.hubId } },
         },
       });
 

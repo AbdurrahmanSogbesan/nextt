@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma";
-import { acceptInviteSchema } from "@/lib/schemas";
+import { updateInviteSchema } from "@/lib/schemas";
 import { auth } from "@clerk/nextjs/server";
 import { STATUS_CHOICE } from "@prisma/client";
 import { NextResponse } from "next/server";
@@ -18,7 +18,7 @@ export async function POST(
     const { id: inviteId } = await params;
     const body = await req.json();
 
-    const validatedData = acceptInviteSchema.parse(body);
+    const validatedData = updateInviteSchema.parse(body);
 
     // 1. Fetch invite with related data
     const invite = await prisma.invite.findUnique({
@@ -70,8 +70,7 @@ export async function POST(
       });
 
       return NextResponse.json({
-        success: true,
-        message: "Invite rejected",
+        message: "REJECTED",
       });
     }
 
@@ -154,8 +153,7 @@ export async function POST(
       }
 
       return NextResponse.json({
-        success: true,
-        message: "Invite accepted",
+        message: "ACCEPTED",
         hubId: invite.hubId,
         rosterId: invite.rosterId,
       });

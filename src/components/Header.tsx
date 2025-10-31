@@ -4,7 +4,7 @@ import Link from "next/link";
 import { UserButton, useUser } from "@clerk/nextjs";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 export default function Header() {
   const { user } = useUser();
@@ -12,7 +12,7 @@ export default function Header() {
   const email = user?.primaryEmailAddress?.emailAddress ?? "";
 
   const { id: hubId } = useParams<{ id: string }>();
-  // const router = useRouter();
+  const router = useRouter();
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/70 backdrop-blur">
@@ -31,7 +31,12 @@ export default function Header() {
           {/* <Button variant="ghost" size="icon" aria-label="Calendar">
             <CalendarDays className="h-5 w-5" />
           </Button> */}
-          <Button variant="ghost" size="icon" aria-label="Notifications">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Notifications"
+            onClick={() => router.push("/notifications")}
+          >
             <Bell className="h-5 w-5" />
           </Button>
 

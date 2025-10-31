@@ -1,5 +1,6 @@
 import { createUserMap } from "@/lib/clerk-utils";
 import prisma from "@/lib/prisma";
+import { NotificationFilter } from "@/types/notification";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
@@ -11,17 +12,21 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { hubId } = await req.json();
+    const { searchParams } = new URL(req.url);
+    const filter = searchParams.get("filter") as NotificationFilter;
 
     const notifications = await prisma.notification.findMany({
       where: {
         users: { has: userId },
-        ...(hubId && { hubId: parseInt(hubId) }),
+        ...(filter === "invitations" && { inviteId: { not: null } }),
+        ...(filter === "tasks" && { turnId: { not: null } }),
       },
       orderBy: { createdAt: "desc" },
       include: {
         hub: true,
         roster: true,
+        invite: true,
+        turn: true,
       },
     });
 
@@ -33,6 +38,7 @@ export async function GET(req: Request) {
         ...notifications.map(
           (notification) => notification.roster?.createdById
         ),
+        ...notifications.map((notification) => notification.invite?.fromId),
       ].filter((id) => id != null)
     );
 
@@ -40,14 +46,24 @@ export async function GET(req: Request) {
 
     const enrichedNotifications = notifications.map((notification) => ({
       ...notification,
-      hub: {
-        ...notification.hub,
-        owner: userMap.get(notification.hub?.ownerId ?? ""),
-      },
-      roster: {
-        ...notification.roster,
-        createdBy: userMap.get(notification.roster?.createdById ?? ""),
-      },
+      hub: notification.hub
+        ? {
+            ...notification.hub,
+            owner: userMap.get(notification.hub.ownerId ?? ""),
+          }
+        : null,
+      roster: notification.roster
+        ? {
+            ...notification.roster,
+            createdBy: userMap.get(notification.roster.createdById ?? ""),
+          }
+        : null,
+      invite: notification.invite
+        ? {
+            ...notification.invite,
+            from: userMap.get(notification.invite.fromId ?? ""),
+          }
+        : null,
     }));
 
     return NextResponse.json({

@@ -37,15 +37,27 @@ export function useStartRoster(rosterId: string) {
   });
 }
 
-export function useCompleteTurn(rosterId: string, onSuccess?: () => void) {
+export function useCompleteTurn(onSuccess?: () => void) {
   return useMutation({
-    mutationKey: ["completeTurn", rosterId],
-    mutationFn: async (turnId: number) => {
+    mutationKey: ["completeTurn"],
+    mutationFn: async ({
+      rosterId,
+      turnId,
+    }: {
+      rosterId: number;
+      turnId: number;
+    }) => {
       await apiPost(`/api/rosters/${rosterId}/complete-turn`, { turnId });
     },
     onSuccess: (data, variables, onMutateResult, context) => {
       toast.success("Turn completed successfully");
-      context.client.invalidateQueries({ queryKey: ["getRoster", rosterId] });
+      context.client.invalidateQueries({
+        queryKey: ["getRoster", variables.rosterId],
+      });
+      context.client.invalidateQueries({
+        queryKey: ["getNotifications"],
+        exact: false,
+      });
       onSuccess?.();
     },
     onError: (error: Error) => {
