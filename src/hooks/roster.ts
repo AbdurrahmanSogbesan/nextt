@@ -30,6 +30,10 @@ export function useStartRoster(rosterId: string) {
     onSuccess: (data, variables, onMutateResult, context) => {
       toast.success("Roster started successfully");
       context.client.invalidateQueries({ queryKey: ["getRoster", rosterId] });
+      context.client.invalidateQueries({
+        queryKey: ["getNotifications"],
+        exact: false,
+      });
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to start roster");
@@ -112,6 +116,10 @@ export function useAddRosterMember(rosterId: string, onSuccess: () => void) {
     },
     onSuccess: (data, variables, onMutateResult, context) => {
       context.client.invalidateQueries({ queryKey: ["getRoster", rosterId] });
+      context.client.invalidateQueries({
+        queryKey: ["getNotifications"],
+        exact: false,
+      });
 
       toast.success("Member added successfully");
       onSuccess();
