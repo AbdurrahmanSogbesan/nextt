@@ -48,70 +48,9 @@ export default function NotificationItem({
     return null;
   };
 
-  // Get notification message
-  const getMessage = () => {
-    if (isPendingInvite && notification.invite) {
-      const hubName = notification.hub?.name || "a hub";
-      const rosterName = notification.roster?.name;
-      const actorName = notification.invite.from
-        ? notification.invite.from.firstName
-        : "Someone";
-
-      if (rosterName) {
-        return (
-          <>
-            {actorName} invited you to join{" "}
-            <span className="text-red-400">{rosterName}</span>
-          </>
-        );
-      }
-      return (
-        <>
-          {actorName} invited you to join{" "}
-          <span className="text-red-400">{hubName}</span>
-        </>
-      );
-    }
-
-    if (isTurnConfirmation) {
-      const rosterName = notification.roster?.name;
-      return (
-        <>
-          Have you completed your turn in{" "}
-          <span className="text-red-400">&quot;{rosterName}&quot;</span>
-        </>
-      );
-    }
-
-    // Task assignment
-    if (notification.turn) {
-      const rosterName = notification.roster?.name;
-      const actorDetails = getActorDetails();
-      const actorName = actorDetails?.name.split(" ")[0] || "Someone";
-
-      if (notification.body === "Your turn has started") {
-        return (
-          <>
-            Your turn has started in{" "}
-            <span className="text-red-400">{rosterName}</span>
-          </>
-        );
-      }
-      return (
-        <>
-          {actorName} assigned a task to you in{" "}
-          <span className="text-red-400">{rosterName}</span>
-        </>
-      );
-    }
-
-    // Generic notification
-    return notification.body || "New notification";
-  };
-
   const actor = getActorDetails();
   const timeAgo = formatDistanceToNow(new Date(notification.createdAt), {
-    addSuffix: false,
+    addSuffix: true,
   });
 
   const getNotificationLink = () => {
@@ -126,14 +65,64 @@ export default function NotificationItem({
 
   const link = getNotificationLink();
 
-  console.log(notification);
-
   const notificationName =
     getFullName(notification.hub?.owner) ||
     getFullName(notification.roster?.createdBy) ||
     notification.hub?.name ||
     notification.roster?.name ||
     actor?.name;
+
+  // Helper function to highlight roster and hub names in the body text
+  const highlightNames = (text: string) => {
+    if (!text) return text;
+
+    const rosterName = notification.roster?.name;
+    const hubName = notification.hub?.name;
+    const namesToHighlight = [rosterName, hubName].filter(Boolean) as string[];
+
+    if (namesToHighlight.length === 0) return text;
+
+    // Create a regex that matches any of the names (case-insensitive)
+    const pattern = namesToHighlight
+      .map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")) // Escape special regex chars
+      .join("|");
+    const regex = new RegExp(`(${pattern})`, "gi");
+
+    const parts = text.split(regex);
+
+    console.log(parts);
+
+    const highlightedText = parts.map((part, index) => {
+      const isHighlighted = namesToHighlight.some(
+        (name) => name.toLowerCase() === part.toLowerCase()
+      );
+      return isHighlighted ? (
+        <span key={index} className="text-red-400">
+          &quot;{part}&quot;
+        </span>
+      ) : (
+        part
+      );
+    });
+
+    // Check if any names were highlighted
+    const hasHighlight = parts.some((part) =>
+      namesToHighlight.some((name) => name.toLowerCase() === part.toLowerCase())
+    );
+
+    // If no names were found in the text, append the first available name
+    if (!hasHighlight) {
+      const nameToAppend = rosterName || hubName;
+      return (
+        <>
+          {text} in{" "}
+          <span className="text-red-400">&quot;{nameToAppend}&quot;</span>
+        </>
+      );
+    }
+
+    return highlightedText;
+  };
 
   const content = (
     <div className="flex items-start justify-between gap-4 rounded-xl border bg-card px-5 py-4 hover:shadow-sm transition-colors">
@@ -149,13 +138,15 @@ export default function NotificationItem({
           <p className="text-sm font-semibold text-foreground mb-0.5">
             {notificationName}
           </p>
-          <p className="text-sm text-muted-foreground">{getMessage()}</p>
+          <p className="text-sm text-muted-foreground">
+            {highlightNames(notification.body || "")}
+          </p>
         </div>
       </div>
 
       <div className="flex flex-col gap-3 flex-shrink-0 items-end">
         <span className="text-xs text-muted-foreground whitespace-nowrap">
-          {timeAgo.replace("about ", "")} ago
+          {timeAgo.replace("about ", "")}
         </span>
 
         {showActionButtons && (

@@ -166,7 +166,7 @@ export async function POST(
       await tx.notification.create({
         data: {
           users: roster.members.map((m) => m.rosterUserId),
-          body: `${currentMemberDetails.firstName}'s turn is complete!`,
+          body: `${currentMemberDetails.firstName}'s turn is complete`,
           roster: { connect: { id: roster.id } },
           hub: { connect: { id: roster.hubId } },
         },
@@ -176,7 +176,7 @@ export async function POST(
       await tx.notification.create({
         data: {
           users: [nextMember.rosterUserId],
-          body: "You are up nextt!",
+          body: `Have you completed your turn in "${roster.name}"?`,
           turn: { connect: { id: newTurn.id } },
           roster: { connect: { id: roster.id } },
           hub: { connect: { id: roster.hubId } },
