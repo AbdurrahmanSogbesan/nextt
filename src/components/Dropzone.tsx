@@ -24,7 +24,6 @@ export default function Dropzone({
   className,
   helperText = 'PNG or SVG up to 2 MB. Drag a file or click to select.',
   maxSizeMB = 2,
-  squareHint = true,
 }: Props) {
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -79,6 +78,7 @@ export default function Dropzone({
       setProgress(0);
       await startUpload([file]);
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [startUpload]
   );
 

@@ -114,13 +114,14 @@ async function getMeAndRole(hubId: string, me: User | null) {
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const user = await currentUser();
+  const { id } = await params;
   const userId = user?.id || null;
   if (!userId) return new NextResponse('Unauthorized', { status: 401 });
 
-  const { me, role } = await getMeAndRole(params.id, user);
+  const { me, role } = await getMeAndRole(id, user);
   if (!me) return new NextResponse('Onboarding required', { status: 400 });
 
   if (role !== 'ADMIN') return new NextResponse('Forbidden', { status: 403 });
@@ -129,7 +130,7 @@ export async function PATCH(
   const body = Schema.parse(json);
 
   const updated = await prisma.hub.update({
-    where: { id: Number(params.id) },
+    where: { id: Number(id) },
     data: {
       name: body.name,
       description: body.description ?? null,
@@ -144,19 +145,20 @@ export async function PATCH(
 
 export async function DELETE(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const user = await currentUser();
+  const { id } = await params;
   const userId = user?.id || null;
   if (!userId) return new NextResponse('Unauthorized', { status: 401 });
 
-  const hub = await prisma.hub.findUnique({ where: { id: Number(params.id) } });
+  const hub = await prisma.hub.findUnique({ where: { id: Number(id) } });
   if (!hub) return new NextResponse('Not found', { status: 404 });
 
   if (hub.ownerId !== userId)
     return new NextResponse('Only the owner can delete', { status: 403 });
   await prisma.$transaction(async (tx) => {
-    const hubId = Number(params.id);
+    const hubId = Number(id);
     await tx.hubMembership.deleteMany({ where: { hubId } });
     await tx.rosterMembership
       ?.deleteMany({ where: { roster: { hubId } } })

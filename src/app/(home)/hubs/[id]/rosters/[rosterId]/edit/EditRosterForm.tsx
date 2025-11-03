@@ -2,7 +2,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { Control, SubmitHandler, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
@@ -85,11 +85,15 @@ export default function EditRosterForm({
   const router = useRouter();
 
   const form = useForm<EditRosterValues>({
+    // @ts-expect-error resolver type issue
     resolver: zodResolver(schema),
     defaultValues: {
       ...initialValues,
       start: initialValues.start ? new Date(initialValues.start) : new Date(),
       end: initialValues.end ? new Date(initialValues.end) : new Date(),
+      ...(initialValues.rotationType !== 'CUSTOM'
+        ? { rotationOption: undefined }
+        : {}),
     },
   });
 
@@ -97,8 +101,10 @@ export default function EditRosterForm({
     watch,
     formState: { isValid },
     handleSubmit,
-    control,
+    control: controlInit,
   } = form;
+
+  const control = controlInit as Control<Partial<EditRosterValues>>;
 
   const rotationType = watch('rotationType');
   const isCustomRotation = rotationType === 'CUSTOM';
@@ -107,6 +113,7 @@ export default function EditRosterForm({
   const isFormValid =
     isValid &&
     (!isCustomRotation ||
+      // @ts-expect-error boolean conversion
       (!!watch('rotationOption?.rotation') && !!watch('rotationOption?.unit')));
 
   async function onSubmit(values: EditRosterValues) {
@@ -146,7 +153,12 @@ export default function EditRosterForm({
         </div>
 
         <Form {...form}>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+          <form
+            onSubmit={handleSubmit(
+              onSubmit as SubmitHandler<Partial<EditRosterValues>>
+            )}
+            className="space-y-8"
+          >
             <FormField
               control={control}
               name="name"

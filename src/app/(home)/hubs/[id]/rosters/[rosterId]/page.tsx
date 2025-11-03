@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import {
   Activity,
   ArrowLeft,
-  ChevronRight,
   MoreHorizontal,
   Pencil,
   Plus,

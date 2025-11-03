@@ -34,12 +34,13 @@ async function getData(hubId: string) {
 export default async function EditHubPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const { userId } = await auth();
   if (!userId) redirect('/sign-in');
 
-  const { me, hub, role } = await getData(params.id);
+  const { me, hub, role } = await getData(id);
   if (!me) redirect('/onboarding');
   if (!hub) notFound();
   if (role !== 'ADMIN') notFound();

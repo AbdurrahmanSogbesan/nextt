@@ -20,24 +20,24 @@ async function getMeAndRole(hubId: string, me: User | null) {
 export default async function EditRosterPage({
   params,
 }: {
-  params: { id: string; rosterId: string };
+  params: Promise<{ id: string; rosterId: string }>;
 }) {
+  const { id, rosterId } = await params;
   const me = await currentUser();
   if (!me) redirect('/sign-in');
 
-  const { hub, role } = await getMeAndRole(params.id, me);
+  const { hub, role } = await getMeAndRole(id, me);
   if (!hub) notFound();
   if (role !== 'ADMIN') notFound();
 
   const roster = await prisma.roster.findUnique({
-    where: { id: Number(params.rosterId) },
+    where: { id: Number(rosterId) },
     include: { rotationOption: true },
   });
-  if (!roster || roster.hubId !== Number(params.id) || roster.isDeleted)
-    notFound();
+  if (!roster || roster.hubId !== Number(id) || roster.isDeleted) notFound();
 
   const initialValues = {
-    hubId: Number(params.id),
+    hubId: Number(id),
     name: roster.name || '',
     description: roster.description || '',
     rotationType: roster.rotationType || 'DAILY',
@@ -71,8 +71,8 @@ export default async function EditRosterPage({
           </div>
         </div>
         <EditRosterForm
-          hubId={Number(params.id)}
-          rosterId={Number(params.rosterId)}
+          hubId={Number(id)}
+          rosterId={Number(rosterId)}
           initialValues={initialValues}
         />
       </main>
