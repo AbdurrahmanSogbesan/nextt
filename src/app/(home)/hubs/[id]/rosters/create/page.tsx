@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import {
   Form,
   FormField,
@@ -15,41 +15,42 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
-} from "@/components/ui/form";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
+} from '@/components/ui/form';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { createRosterSchema } from "@/lib/schemas";
-import Loading from "@/components/Loading";
-import { ROTATION_CHOICE, ROTATION_TYPE } from "@prisma/client";
-import { addDays, subDays } from "date-fns";
-import { DatePicker } from "@/components/DatePicker";
-import { useGetHub } from "@/hooks/hub";
-import { CreateRosterForm } from "@/types/roster";
-import { useCreateRoster } from "@/hooks/roster";
-import SelectMembersModal from "@/components/SelectMembersModal";
-import { useQueryClient } from "@tanstack/react-query";
+} from '@/components/ui/select';
+import { createRosterSchema } from '@/lib/schemas';
+import Loading from '@/components/Loading';
+import { ROTATION_CHOICE, ROTATION_TYPE } from '@prisma/client';
+import { addDays, subDays } from 'date-fns';
+import { DatePicker } from '@/components/DatePicker';
+import { useGetHub } from '@/hooks/hub';
+import { CreateRosterForm } from '@/types/roster';
+import { useCreateRoster } from '@/hooks/roster';
+import SelectMembersModal from '@/components/SelectMembersModal';
+import { useQueryClient } from '@tanstack/react-query';
+import BackButton from '../../../../../../components/BackButton';
 
 const rotationChoiceLabels: Record<ROTATION_CHOICE, string> = {
-  DAILY: "Daily",
-  WEEKLY: "Weekly",
-  MONTHLY: "Monthly",
-  ANNUALLY: "Annually",
-  CUSTOM: "Custom",
+  DAILY: 'Daily',
+  WEEKLY: 'Weekly',
+  MONTHLY: 'Monthly',
+  ANNUALLY: 'Annually',
+  CUSTOM: 'Custom',
 };
 
 const rotationTypeLabels: Record<ROTATION_TYPE, string> = {
-  DAILY: "Daily",
-  WEEKLY: "Weekly",
-  ANNUALLY: "Annually",
+  DAILY: 'Daily',
+  WEEKLY: 'Weekly',
+  ANNUALLY: 'Annually',
 };
 
 export default function CreateRosterPage() {
@@ -68,8 +69,8 @@ export default function CreateRosterPage() {
     resolver: zodResolver(createRosterSchema),
     defaultValues: {
       hubId: undefined,
-      name: "",
-      description: "",
+      name: '',
+      description: '',
       rotationType: ROTATION_CHOICE.DAILY,
       start: new Date(),
       end: addDays(new Date(), 30),
@@ -95,14 +96,14 @@ export default function CreateRosterPage() {
 
   useEffect(() => {
     if (hubData?.hub?.id) {
-      setValue("hubId", hubData.hub.id);
+      setValue('hubId', hubData.hub.id);
     }
   }, [hubData?.hub?.id, setValue]);
 
   const { mutate: createRoster, isPending: isCreatingRoster } = useCreateRoster(
     (id) => {
       router.push(`/hubs/${hubId}/rosters/${id}`);
-      queryClient.invalidateQueries({ queryKey: ["getHub", hubId] });
+      queryClient.invalidateQueries({ queryKey: ['getHub', hubId] });
     }
   );
 
@@ -115,19 +116,19 @@ export default function CreateRosterPage() {
           : undefined,
       members: includeAllHubMembers ? undefined : values.members,
     };
-    console.log("formValues", formValues);
+    console.log('formValues', formValues);
     createRoster(formValues);
   }
 
-  const rotationType = watch("rotationType");
-  const includeAllHubMembers = watch("includeAllHubMembers");
+  const rotationType = watch('rotationType');
+  const includeAllHubMembers = watch('includeAllHubMembers');
   const isCustomRotation = rotationType === ROTATION_CHOICE.CUSTOM;
-  const start = watch("start");
-  const members = watch("members");
+  const start = watch('start');
+  const members = watch('members');
 
   const hasMembers = includeAllHubMembers || (members && members.length > 0);
   const hasCompleteCustomRotation = isCustomRotation
-    ? watch("rotationOption.rotation") && watch("rotationOption.unit")
+    ? watch('rotationOption.rotation') && watch('rotationOption.unit')
     : true;
 
   // const hasRequiredFields =
@@ -155,14 +156,17 @@ export default function CreateRosterPage() {
   return (
     <div className="min-h-screen">
       <main className="mx-auto w-full max-w-4xl px-4 py-8 md:py-12">
-        <div className="mb-8">
-          <h1 className="text-3xl font-semibold tracking-tight">
-            Create Roster
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Venue, times, location, line ups... we will keep you in the loop
-            when things are updated
-          </p>
+        <div className="mb-6 flex items-center justify-between">
+          <BackButton fallbackHref={`/hub/${hubId}`} />
+          <div className="text-right">
+            <h1 className="text-3xl font-semibold tracking-tight">
+              Create Roster
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Venue, times, location, line ups... we will keep you in the loop
+              when things are updated
+            </p>
+          </div>
         </div>
 
         <Card className="border border-border/60 bg-background/80 backdrop-blur shadow-sm">
@@ -215,9 +219,9 @@ export default function CreateRosterPage() {
                       <FormLabel>Visibility</FormLabel>
                       <FormControl>
                         <RadioGroup
-                          value={field.value ? "PRIVATE" : "PUBLIC"}
+                          value={field.value ? 'PRIVATE' : 'PUBLIC'}
                           onValueChange={(value) =>
-                            field.onChange(value === "PRIVATE")
+                            field.onChange(value === 'PRIVATE')
                           }
                           className="flex items-center gap-3"
                         >
@@ -481,7 +485,7 @@ export default function CreateRosterPage() {
         onOpenChange={setIsSelectMembersOpen}
         members={hubData.hub.members}
         onSave={(selectedMembers) => {
-          setValue("members", selectedMembers, { shouldValidate: true });
+          setValue('members', selectedMembers, { shouldValidate: true });
         }}
         initialSelected={members}
       />

@@ -1,15 +1,16 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { UserButton, useUser } from "@clerk/nextjs";
-import { Bell } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useParams } from "next/navigation";
+import Link from 'next/link';
+import { UserButton, useUser } from '@clerk/nextjs';
+import { Bell } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useParams } from 'next/navigation';
+import { HubSwitcher } from './HubSwitcher';
 
 export default function Header() {
   const { user } = useUser();
-  const fullName = user?.fullName || "Account";
-  const email = user?.primaryEmailAddress?.emailAddress ?? "";
+  const fullName = user?.fullName || 'Account';
+  const email = user?.primaryEmailAddress?.emailAddress ?? '';
 
   const { id: hubId } = useParams<{ id: string }>();
   // const router = useRouter();
@@ -36,18 +37,19 @@ export default function Header() {
           </Button>
 
           <div className="flex items-center cursor-pointer gap-3 px-2">
+            <UserButton
+              appearance={{
+                elements: {
+                  userPreview: 'hidden',
+                },
+              }}
+            />
             <div className="hidden text-left leading-tight md:block">
               <div className="text-sm font-medium">{fullName}</div>
               <div className="text-xs text-muted-foreground">{email}</div>
             </div>
-            <UserButton
-              appearance={{
-                elements: {
-                  userPreview: "hidden",
-                },
-              }}
-            />
           </div>
+          <HubSwitcher />
         </div>
       </div>
     </header>

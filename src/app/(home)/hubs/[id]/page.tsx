@@ -1,37 +1,38 @@
-"use client";
+'use client';
 
-import { notFound, useParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { notFound, useParams } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+} from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import {
   Activity,
   ClipboardList,
+  Edit,
   Info,
   Lock,
   Plus,
   UserPlus,
-} from "lucide-react";
-import Link from "next/link";
-import { getFormattedDate } from "@/lib/utils";
-import MemberCard from "@/components/MemberCard";
-import { accent } from "@/lib/theme";
-import TurnCard from "@/components/TurnCard";
-import AvatarStack from "@/components/AvatarStack";
-import Initials from "@/components/Initials";
-import { useAuth } from "@clerk/nextjs";
-import Loading from "@/components/Loading";
-import { getUserInfo } from "@/lib/utils";
-import { useGetHub, useUpdateLastVisitStatus } from "@/hooks/hub";
-import { GetHubResponse, type HubActivity } from "@/types/hub";
-import { useState } from "react";
-import InviteModal from "@/components/InviteModal";
+} from 'lucide-react';
+import Link from 'next/link';
+import { getFormattedDate } from '@/lib/utils';
+import MemberCard from '@/components/MemberCard';
+import { accent } from '@/lib/theme';
+import TurnCard from '@/components/TurnCard';
+import AvatarStack from '@/components/AvatarStack';
+import Initials from '@/components/Initials';
+import { useAuth } from '@clerk/nextjs';
+import Loading from '@/components/Loading';
+import { getUserInfo } from '@/lib/utils';
+import { useGetHub, useUpdateLastVisitStatus } from '@/hooks/hub';
+import { GetHubResponse, type HubActivity } from '@/types/hub';
+import { useState } from 'react';
+import InviteModal from '@/components/InviteModal';
 
 export default function HubDashboard() {
   const { userId } = useAuth();
@@ -57,9 +58,9 @@ export default function HubDashboard() {
     ? new Map(Object.entries(userMapRecord))
     : new Map();
 
-  if (!isMember && hub.visibility === "PRIVATE") return notFound();
+  if (!isMember && hub.visibility === 'PRIVATE') return notFound();
 
-  const theme = accent(hub.theme || "indigo");
+  const theme = accent(hub.theme || 'indigo');
 
   const memberCount = hub.members.length;
 
@@ -70,10 +71,10 @@ export default function HubDashboard() {
 
   function getTurnInfo(turnId: string | null) {
     // turn id is user reference
-    if (!turnId) return { name: "Unknown", avatarUrl: "", isMe: false };
+    if (!turnId) return { name: 'Unknown', avatarUrl: '', isMe: false };
     const user = getUserInfo(userMap, turnId);
     return {
-      name: user.firstName + " " + user.lastName,
+      name: user.firstName + ' ' + user.lastName,
       avatarUrl: user.avatarUrl,
       isMe: turnId === userId!,
     };
@@ -107,6 +108,12 @@ export default function HubDashboard() {
                 <UserPlus className="h-4 w-4" />
                 Invite to hub
               </Button>
+              <Link href={`/hubs/${hub.id}/edit`}>
+                <Button variant="outline" className="gap-2">
+                  <Edit className="h-4 w-4" />
+                  Edit hub
+                </Button>
+              </Link>
               <Link href={`/hubs/${hub.id}/rosters/create`}>
                 <Button variant="outline" className="gap-2">
                   <Plus className="h-4 w-4" />
@@ -152,7 +159,7 @@ export default function HubDashboard() {
                 title="Current"
                 rightText={
                   getTurnInfo(firstRoster.currentTurnId).isMe
-                    ? "Me"
+                    ? 'Me'
                     : getTurnInfo(firstRoster.currentTurnId).name
                 }
                 image={getTurnInfo(firstRoster.currentTurnId).avatarUrl}
@@ -167,7 +174,7 @@ export default function HubDashboard() {
                 title="Next"
                 rightText={
                   getTurnInfo(firstRoster.nextTurnId).isMe
-                    ? "Me"
+                    ? 'Me'
                     : getTurnInfo(firstRoster.nextTurnId).name
                 }
                 image={getTurnInfo(firstRoster.nextTurnId).avatarUrl}
@@ -229,7 +236,7 @@ export default function HubDashboard() {
                   strokeWidth={1}
                 />
                 <span className="font-medium text-muted-foreground">
-                  You don&apos;t belong to any Roster yet...{" "}
+                  You don&apos;t belong to any Roster yet...{' '}
                   <Link
                     href={`/hubs/${hub.id}/rosters/create`}
                     className="text-primary hover:underline"
@@ -324,18 +331,18 @@ function HubActivity({
   hub,
 }: {
   activity: HubActivity;
-  hub: GetHubResponse["hub"];
+  hub: GetHubResponse['hub'];
 }) {
   const rosterName = hub.rosters.find((r) => r.id === activity.rosterId)?.name;
   return (
     <div
       className={
-        "flex justify-between rounded-xl border px-5 py-4 border-indigo-600/60 bg-indigo-100/15"
+        'flex justify-between rounded-xl border px-5 py-4 border-indigo-600/60 bg-indigo-100/15'
       }
     >
       <div className="flex gap-3 align-text-top">
         <Avatar className="size-10">
-          <AvatarImage src={activity.actor.avatarUrl || ""} />
+          <AvatarImage src={activity.actor.avatarUrl || ''} />
           <AvatarFallback>
             <Initials
               name={`${activity.actor.firstName} ${activity.actor.lastName}`}
@@ -350,12 +357,12 @@ function HubActivity({
       <div className="flex flex-col items-end gap-2">
         <div
           className={
-            "text-xs text-foreground border bg-white rounded-lg p-[10px] h-fit w-fit border-indigo-600/60"
+            'text-xs text-foreground border bg-white rounded-lg p-[10px] h-fit w-fit border-indigo-600/60'
           }
         >
           {new Date(activity.createdAt).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
+            hour: '2-digit',
+            minute: '2-digit',
           })}
         </div>
 
