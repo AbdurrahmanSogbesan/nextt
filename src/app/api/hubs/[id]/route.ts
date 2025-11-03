@@ -157,15 +157,10 @@ export async function DELETE(
 
   if (hub.ownerId !== userId)
     return new NextResponse('Only the owner can delete', { status: 403 });
-  await prisma.$transaction(async (tx) => {
-    const hubId = Number(id);
-    await tx.hubMembership.deleteMany({ where: { hubId } });
-    await tx.rosterMembership
-      ?.deleteMany({ where: { roster: { hubId } } })
-      .catch(() => {});
-    await tx.roster?.deleteMany({ where: { hubId } }).catch(() => {});
-    await tx.activity?.deleteMany({ where: { hubId } }).catch(() => {});
-    await tx.hub.delete({ where: { id: hubId } });
+
+  await prisma.hub.update({
+    where: { id: Number(id) },
+    data: { isDeleted: true },
   });
 
   return NextResponse.json({ ok: true });
