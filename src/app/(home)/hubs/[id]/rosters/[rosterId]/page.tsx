@@ -1,41 +1,47 @@
-"use client";
+'use client';
 
-import { notFound, useParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { notFound, useParams } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 
-import { Activity, MoreHorizontal, Pencil, Plus } from "lucide-react";
-import Link from "next/link";
-import MemberCard from "@/components/MemberCard";
-import { accent } from "@/lib/theme";
-import { useAuth } from "@clerk/nextjs";
-import Loading from "@/components/Loading";
-import { getFormattedDate, getUserInfo } from "@/lib/utils";
-import ActivityCard from "@/components/ActivityCard";
-import RosterTurnPrompt from "@/components/RosterTurnPrompt";
-import RosterSchedule from "@/components/RosterSchedule";
-import CommentSection from "@/components/CommentSection";
+import {
+  Activity,
+  ArrowLeft,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+} from 'lucide-react';
+import Link from 'next/link';
+import MemberCard from '@/components/MemberCard';
+import { accent } from '@/lib/theme';
+import { useAuth } from '@clerk/nextjs';
+import Loading from '@/components/Loading';
+import { getFormattedDate, getUserInfo } from '@/lib/utils';
+import ActivityCard from '@/components/ActivityCard';
+import RosterTurnPrompt from '@/components/RosterTurnPrompt';
+import RosterSchedule from '@/components/RosterSchedule';
+import CommentSection from '@/components/CommentSection';
 import {
   useGetRoster,
   useStartRoster,
   useCompleteTurn,
   useAddComment,
-} from "@/hooks/roster";
-import { ROTATION_CHOICE, STATUS_CHOICE } from "@prisma/client";
+} from '@/hooks/roster';
+import { ROTATION_CHOICE, STATUS_CHOICE } from '@prisma/client';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import TurnCard from "@/components/TurnCard";
-import { useState } from "react";
-import AddMemberModal from "@/components/AddMemberModal";
-import InviteModal from "@/components/InviteModal";
+} from '@/components/ui/dropdown-menu';
+import TurnCard from '@/components/TurnCard';
+import { useState } from 'react';
+import AddMemberModal from '@/components/AddMemberModal';
+import InviteModal from '@/components/InviteModal';
 
 export default function RosterDashboard() {
   const { userId } = useAuth();
   const { rosterId, id: hubId } = useParams<{ rosterId: string; id: string }>();
-  const [showModal, setShowModal] = useState<"invite" | "addMember" | null>(
+  const [showModal, setShowModal] = useState<'invite' | 'addMember' | null>(
     null
   );
 
@@ -59,7 +65,7 @@ export default function RosterDashboard() {
     ? new Map(Object.entries(userMapRecord))
     : new Map();
 
-  const theme = accent(roster.hub?.theme || "indigo");
+  const theme = accent(roster.hub?.theme || 'indigo');
   const memberCount = roster.members.length;
   const isStarted = roster.status === STATUS_CHOICE.ONGOING;
   const isCurrentTurn = roster.currentTurnId === userId;
@@ -67,7 +73,7 @@ export default function RosterDashboard() {
   // Get current user's turn info if they're the current turn
   const [currentTurn] = roster.turns;
 
-  const creatorDetails = getUserInfo(userMap, roster.createdById || "");
+  const creatorDetails = getUserInfo(userMap, roster.createdById || '');
 
   return (
     <div className="min-h-screen">
@@ -81,7 +87,7 @@ export default function RosterDashboard() {
                   {roster.name}
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  Created by {creatorDetails.firstName}{" "}
+                  Created by {creatorDetails.firstName}{' '}
                   {creatorDetails.lastName}
                 </p>
               </div>
@@ -93,11 +99,19 @@ export default function RosterDashboard() {
                     <span className="sr-only">Open menu</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem>
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Edit roster
-                  </DropdownMenuItem>
+                <DropdownMenuContent align="end" className="w-[150px]">
+                  <Link href={`/hubs/${hubId}/rosters/${rosterId}/edit`}>
+                    <DropdownMenuItem>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Edit roster
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link href={`/hubs/${hubId}`}>
+                    <DropdownMenuItem>
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Back to hub
+                    </DropdownMenuItem>
+                  </Link>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -132,14 +146,14 @@ export default function RosterDashboard() {
               title="Current"
               rightText={
                 roster.currentTurnId === userId
-                  ? "Me"
+                  ? 'Me'
                   : `${
-                      getUserInfo(userMap, roster.currentTurnId || "").firstName
+                      getUserInfo(userMap, roster.currentTurnId || '').firstName
                     } ${
-                      getUserInfo(userMap, roster.currentTurnId || "").lastName
+                      getUserInfo(userMap, roster.currentTurnId || '').lastName
                     }`
               }
-              image={getUserInfo(userMap, roster.currentTurnId || "").avatarUrl}
+              image={getUserInfo(userMap, roster.currentTurnId || '').avatarUrl}
               theme={theme}
             />
             <TurnCard
@@ -151,12 +165,12 @@ export default function RosterDashboard() {
               title="Next"
               rightText={
                 roster.nextTurnId === userId
-                  ? "Me"
+                  ? 'Me'
                   : `${
-                      getUserInfo(userMap, roster.nextTurnId || "").firstName
-                    } ${getUserInfo(userMap, roster.nextTurnId || "").lastName}`
+                      getUserInfo(userMap, roster.nextTurnId || '').firstName
+                    } ${getUserInfo(userMap, roster.nextTurnId || '').lastName}`
               }
-              image={getUserInfo(userMap, roster.nextTurnId || "").avatarUrl}
+              image={getUserInfo(userMap, roster.nextTurnId || '').avatarUrl}
               theme={theme}
               isActive
             />
@@ -187,7 +201,7 @@ export default function RosterDashboard() {
 
             {/* Add member */}
             <button
-              onClick={() => setShowModal("addMember")}
+              onClick={() => setShowModal('addMember')}
               className="grid place-items-center h-full rounded-2xl border border-dashed bg-background/60 p-6 hover:bg-background transition-colors"
             >
               <div className="flex flex-col items-center gap-3">
@@ -229,7 +243,7 @@ export default function RosterDashboard() {
                   <ActivityCard
                     key={a.id}
                     title={a.title}
-                    body={a.body ?? ""}
+                    body={a.body ?? ''}
                     actor={a.actor}
                     createdAt={a.createdAt}
                     variant="primary"
@@ -258,15 +272,15 @@ export default function RosterDashboard() {
       </main>
 
       <AddMemberModal
-        isOpen={showModal === "addMember"}
+        isOpen={showModal === 'addMember'}
         handleClose={handleCloseModal}
         hubId={hubId}
         rosterMembers={roster.members}
-        onInviteClick={() => setShowModal("invite")}
+        onInviteClick={() => setShowModal('invite')}
       />
 
       <InviteModal
-        show={showModal === "invite"}
+        show={showModal === 'invite'}
         onClose={handleCloseModal}
         title="Send Invitation"
         isRosterInvite

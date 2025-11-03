@@ -104,6 +104,25 @@ export function useCreateRoster(onSuccess: (id: string) => void) {
   });
 }
 
+export function useUpdateRoster(rosterId: string, onSuccess?: () => void) {
+  return useMutation({
+    mutationFn: async (payload: Partial<CreateRosterForm>) => {
+      const r = await fetch(`/api/rosters/${rosterId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    },
+    onSuccess,
+    onError: (error: Error) => {
+      console.error("Error updating roster:", error);
+      toast.error(error.message || "Failed to update roster");
+    },
+  });
+}
+
 export function useAddRosterMember(rosterId: string, onSuccess: () => void) {
   return useMutation({
     mutationKey: ["addRosterMember", rosterId],

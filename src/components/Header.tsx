@@ -5,6 +5,7 @@ import { UserButton, useUser } from "@clerk/nextjs";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useParams, useRouter } from "next/navigation";
+import { HubSwitcher } from "./HubSwitcher";
 
 export default function Header() {
   const { user } = useUser();
@@ -41,10 +42,6 @@ export default function Header() {
           </Button>
 
           <div className="flex items-center cursor-pointer gap-3 px-2">
-            <div className="hidden text-left leading-tight md:block">
-              <div className="text-sm font-medium">{fullName}</div>
-              <div className="text-xs text-muted-foreground">{email}</div>
-            </div>
             <UserButton
               appearance={{
                 elements: {
@@ -52,7 +49,12 @@ export default function Header() {
                 },
               }}
             />
+            <div className="hidden text-left leading-tight md:block">
+              <div className="text-sm font-medium">{fullName}</div>
+              <div className="text-xs text-muted-foreground">{email}</div>
+            </div>
           </div>
+          <HubSwitcher />
         </div>
       </div>
     </header>
