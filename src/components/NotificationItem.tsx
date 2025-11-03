@@ -5,6 +5,7 @@ import Initials from "./Initials";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { getFullName } from "@/lib/utils";
+
 export default function NotificationItem({
   notification,
   onAcceptInvite,

@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { UserButton, useUser } from "@clerk/nextjs";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { HubSwitcher } from "./HubSwitcher";
 
 export default function Header() {
@@ -12,7 +11,6 @@ export default function Header() {
   const fullName = user?.fullName || "Account";
   const email = user?.primaryEmailAddress?.emailAddress ?? "";
 
-  const { id: hubId } = useParams<{ id: string }>();
   const router = useRouter();
 
   return (
@@ -20,12 +18,12 @@ export default function Header() {
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4">
         {/* Left: brand */}
         {/* todo: configure link  - should take user to current hub dashboard. Needs to consider when user has no hubs. otherwise could use hub create form? */}
-        <Link href={`/hubs/${hubId}`} className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <div className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-tr from-indigo-500 to-sky-400 text-white shadow-sm">
             <span className="text-sm font-bold">N</span>
           </div>
           <span className="text-lg font-semibold tracking-tight">Nextt</span>
-        </Link>
+        </div>
 
         {/* Right: actions */}
         <div className="flex items-center gap-3">

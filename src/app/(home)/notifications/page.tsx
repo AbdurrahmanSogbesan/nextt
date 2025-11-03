@@ -15,6 +15,7 @@ import {
 import { Bell } from "lucide-react";
 import { useCompleteTurn } from "@/hooks/roster";
 import { useRouter } from "next/navigation";
+import BackButton from "@/components/BackButton";
 
 export default function NotificationsPage() {
   const [filter, setFilter] = useState<NotificationFilter>("all");
@@ -71,6 +72,10 @@ export default function NotificationsPage() {
     <div className="min-h-screen">
       <section className="relative border-b backdrop-blur-2xl">
         <div className="relative mx-auto w-full max-w-6xl px-4 py-8">
+          <div className="mb-2">
+            <BackButton />
+          </div>
+
           <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
             <div>
               <h1 className="text-3xl font-semibold tracking-tight">
@@ -96,7 +101,7 @@ export default function NotificationsPage() {
       </section>
 
       <main className="mx-auto w-full max-w-6xl px-4 py-8">
-        <div className="space-y-3">
+        <div className="flex flex-col gap-3">
           {notifications.length > 0 ? (
             notifications.map((notification) => (
               <NotificationItem

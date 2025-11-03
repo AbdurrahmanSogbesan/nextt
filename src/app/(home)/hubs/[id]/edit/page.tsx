@@ -1,17 +1,17 @@
-import { auth, currentUser } from '@clerk/nextjs/server';
-import { redirect, notFound } from 'next/navigation';
-import prisma from '@/lib/prisma';
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { redirect, notFound } from "next/navigation";
+import prisma from "@/lib/prisma";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import DeleteHubButton from './_delete-hub-button';
-import { PrismaHub } from '@/types/hub';
-import EditHubForm, { EditHubValues } from './EditHubForm';
-import BackButton from '@/components/BackButton';
+} from "@/components/ui/card";
+import DeleteHubButton from "./_delete-hub-button";
+import { PrismaHub } from "@/types/hub";
+import EditHubForm, { EditHubValues } from "./EditHubForm";
+import BackButton from "@/components/BackButton";
 
 async function getData(hubId: string) {
   const me = await currentUser();
@@ -27,7 +27,7 @@ async function getData(hubId: string) {
   });
 
   if (!hub) return { me, hub: null, role: null };
-  const role = hub.members![0]?.isAdmin ? 'ADMIN' : 'MEMBER';
+  const role = hub.members![0]?.isAdmin ? "ADMIN" : "MEMBER";
   return { me, hub, role };
 }
 
@@ -38,19 +38,20 @@ export default async function EditHubPage({
 }) {
   const { id } = await params;
   const { userId } = await auth();
-  if (!userId) redirect('/sign-in');
+  if (!userId) redirect("/sign-in");
 
   const { me, hub, role } = await getData(id);
-  if (!me) redirect('/onboarding');
+
+  if (!me) redirect("/onboarding");
   if (!hub) notFound();
-  if (role !== 'ADMIN') notFound();
+  if (role !== "ADMIN") notFound();
 
   const initialValues: EditHubValues = {
     name: hub.name!,
-    description: hub.description ?? '',
+    description: hub.description ?? "",
     logo: hub.logo ?? null,
-    theme: (hub.theme as EditHubValues['theme']) || 'indigo',
-    visibility: hub.visibility as EditHubValues['visibility'],
+    theme: (hub.theme as EditHubValues["theme"]) || "indigo",
+    visibility: hub.visibility as EditHubValues["visibility"],
   };
 
   return (
