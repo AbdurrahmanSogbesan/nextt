@@ -38,20 +38,7 @@ import { useCreateRoster } from "@/hooks/roster";
 import SelectMembersModal from "@/components/SelectMembersModal";
 import { useQueryClient } from "@tanstack/react-query";
 import BackButton from "@/components/BackButton";
-
-const rotationChoiceLabels: Record<ROTATION_CHOICE, string> = {
-  DAILY: "Daily",
-  WEEKLY: "Weekly",
-  MONTHLY: "Monthly",
-  ANNUALLY: "Annually",
-  CUSTOM: "Custom",
-};
-
-const rotationTypeLabels: Record<ROTATION_TYPE, string> = {
-  DAILY: "Daily",
-  WEEKLY: "Weekly",
-  ANNUALLY: "Annually",
-};
+import { rotationChoiceLabels, rotationTypeLabels } from "@/lib/constants";
 
 export default function CreateRosterPage() {
   const router = useRouter();

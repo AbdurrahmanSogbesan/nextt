@@ -1,5 +1,5 @@
 import { Prisma, RosterMembership } from "@prisma/client";
-import { createRosterSchema } from "@/lib/schemas";
+import { createRosterSchema, editRosterSchema } from "@/lib/schemas";
 import { z } from "zod";
 import { MemberUserDetails } from ".";
 
@@ -44,6 +44,8 @@ export type GetRosterResponse = {
 };
 
 export type CreateRosterForm = z.infer<typeof createRosterSchema>;
+
+export type EditRosterForm = z.infer<typeof editRosterSchema>;
 
 export type GetRosterMembersResponse = {
   roster: Roster;

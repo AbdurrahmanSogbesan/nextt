@@ -2,8 +2,10 @@ import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
 import {
   CreateHubForm,
   CreateInviteParams,
+  EditHubForm,
   GetHubMembersResponse,
   GetHubResponse,
+  GetMyHubsResponse,
   HubInvite,
   RemoveHubMemberParams,
   RemoveHubMemberResponse,
@@ -128,5 +130,52 @@ export function useCreateInvite(onSuccess: () => void) {
     onError: (error: Error) => {
       toast.error(error.message || "Failed to create invite");
     },
+  });
+}
+
+export function useDeleteHub(onSuccess: () => void) {
+  return useMutation({
+    mutationKey: ["deleteHub"],
+    mutationFn: async (hubId: string) => {
+      const response = await apiDelete<{ ok: boolean }>(`/api/hubs/${hubId}`);
+      return response.ok;
+    },
+    onSuccess: (data, variables, onMutateResult, context) => {
+      context.client.invalidateQueries({ queryKey: ["getMyHubs"] });
+      toast.success("Hub deleted successfully");
+      onSuccess();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to delete hub");
+    },
+  });
+}
+
+export function useUpdateHub(hubId: string, onSuccess: () => void) {
+  return useMutation({
+    mutationKey: ["updateHub", hubId],
+    mutationFn: async (data: EditHubForm) => {
+      const response = await apiPatch<{ id: string }>(
+        `/api/hubs/${hubId}`,
+        data
+      );
+      return response.id;
+    },
+    onSuccess: (data, variables, onMutateResult, context) => {
+      context.client.invalidateQueries({ queryKey: ["getHub", hubId] });
+      toast.success("Hub updated successfully");
+      onSuccess();
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update hub");
+    },
+  });
+}
+
+export function useGetMyHubs({ enabled }: { enabled: boolean }) {
+  return useQuery({
+    queryKey: ["getMyHubs"],
+    queryFn: () => apiGet<GetMyHubsResponse>(`/api/hubs/mine`),
+    enabled,
   });
 }

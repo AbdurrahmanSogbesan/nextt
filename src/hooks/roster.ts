@@ -9,6 +9,7 @@ import {
   RemoveRosterMemberResponse,
   UpdateRosterMemberRoleResponse,
   UpdateRosterMemberRoleParams,
+  EditRosterForm,
 } from "@/types/roster";
 import { toast } from "sonner";
 import z from "zod";
@@ -106,16 +107,20 @@ export function useCreateRoster(onSuccess: (id: string) => void) {
 
 export function useUpdateRoster(rosterId: string, onSuccess?: () => void) {
   return useMutation({
-    mutationFn: async (payload: Partial<CreateRosterForm>) => {
-      const r = await fetch(`/api/rosters/${rosterId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+    mutationKey: ["updateRoster", rosterId],
+    mutationFn: async (data: EditRosterForm) =>
+      await apiPatch<{ id: number }>(`/api/rosters/${rosterId}`, data),
+    onSuccess: async (data, variables, onMutateResult, context) => {
+      toast.success("Roster updated successfully");
+      context.client.refetchQueries({
+        queryKey: ["getRoster", rosterId],
       });
-      if (!r.ok) throw new Error(await r.text());
-      return r.json();
+      context.client.refetchQueries({
+        queryKey: ["getHub"],
+        exact: false,
+      });
+      onSuccess?.();
     },
-    onSuccess,
     onError: (error: Error) => {
       console.error("Error updating roster:", error);
       toast.error(error.message || "Failed to update roster");

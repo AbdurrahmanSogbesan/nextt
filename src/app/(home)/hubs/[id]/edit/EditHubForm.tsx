@@ -1,14 +1,13 @@
-'use client';
+"use client";
 
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import Dropzone from '@/components/Dropzone';
-import ThemeSwatches from '@/components/ThemeSwatches';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import Dropzone from "@/components/Dropzone";
+import ThemeSwatches from "@/components/ThemeSwatches";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Form,
   FormControl,
@@ -16,42 +15,37 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-
-const Schema = z.object({
-  name: z.string().min(2, 'Name is required'),
-  description: z.string().max(500).optional().or(z.literal('')),
-  logo: z.string().url().nullable().optional(),
-  theme: z.enum(['indigo', 'sky', 'rose', 'emerald', 'amber', 'zinc']),
-  visibility: z.enum(['PUBLIC', 'PRIVATE', 'UNLISTED']),
-});
-export type EditHubValues = z.infer<typeof Schema>;
+} from "@/components/ui/form";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import type { EditHubForm } from "@/types/hub";
+import { createHubSchema } from "@/lib/schemas";
+import { useRouter } from "next/navigation";
+import { useUpdateHub } from "@/hooks/hub";
 
 export default function EditHubForm({
   hubId,
   initialValues,
 }: {
   hubId: string;
-  initialValues: EditHubValues;
+  initialValues: EditHubForm;
 }) {
-  const form = useForm<EditHubValues>({
-    resolver: zodResolver(Schema),
+  const router = useRouter();
+
+  const form = useForm<EditHubForm>({
+    resolver: zodResolver(createHubSchema),
     defaultValues: initialValues,
   });
 
-  async function onSubmit(values: EditHubValues) {
-    const res = await fetch(`/api/hubs/${hubId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(values),
-    });
-    if (!res.ok) {
-      const t = await res.text();
-      alert('Update failed: ' + t);
-      return;
-    }
-    window.location.href = `/hubs/${hubId}`;
+  const {
+    formState: { isValid, isDirty },
+  } = form;
+
+  const { mutateAsync: updateHub, isPending } = useUpdateHub(hubId, () => {
+    router.push(`/hubs/${hubId}`);
+  });
+
+  async function onSubmit(values: EditHubForm) {
+    await updateHub(values);
   }
 
   return (
@@ -59,15 +53,15 @@ export default function EditHubForm({
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <FormField
           control={form.control}
-          name="logo"
+          name="logoUrl"
           render={() => (
             <FormItem>
               <FormLabel>Logo</FormLabel>
               <FormControl>
                 <Dropzone
-                  value={form.watch('logo') ?? null}
+                  value={form.watch("logoUrl") ?? null}
                   onChange={(url: string | null) =>
-                    form.setValue('logo', url, { shouldDirty: true })
+                    form.setValue("logoUrl", url, { shouldDirty: true })
                   }
                 />
               </FormControl>
@@ -156,7 +150,7 @@ export default function EditHubForm({
                   <ThemeSwatches
                     value={field.value}
                     onChange={(v) =>
-                      form.setValue('theme', v as EditHubValues['theme'], {
+                      form.setValue("theme", v as EditHubForm["theme"], {
                         shouldDirty: true,
                       })
                     }
@@ -172,7 +166,9 @@ export default function EditHubForm({
           <Button type="button" variant="ghost" onClick={() => history.back()}>
             Cancel
           </Button>
-          <Button type="submit">Save changes</Button>
+          <Button type="submit" disabled={!isDirty || !isValid || isPending}>
+            Save changes
+          </Button>
         </div>
       </form>
     </Form>

@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
-import Image from 'next/image';
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
+import Image from "next/image";
 import {
   Building2,
   ChevronRight,
@@ -11,44 +11,39 @@ import {
   HelpCircle,
   Settings,
   Plus,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { SignOutButton } from '@clerk/nextjs';
-import { PrismaHub } from '../types/hub';
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { SignOutButton } from "@clerk/nextjs";
+import { useGetMyHubs } from "@/hooks/hub";
 
 const themeDot: Record<string, string> = {
-  indigo: 'bg-indigo-500',
-  sky: 'bg-sky-400',
-  rose: 'bg-rose-500',
-  emerald: 'bg-emerald-500',
-  amber: 'bg-amber-500',
-  zinc: 'bg-zinc-600',
+  indigo: "bg-indigo-500",
+  sky: "bg-sky-400",
+  rose: "bg-rose-500",
+  emerald: "bg-emerald-500",
+  amber: "bg-amber-500",
+  zinc: "bg-zinc-600",
 };
 
 export function HubSwitcher() {
   const [open, setOpen] = useState(false);
-  const [hubs, setHubs] = useState<PrismaHub[]>([]);
-  const [q, setQ] = useState('');
+  const [query, setQuery] = useState("");
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    if (!open) return;
-    fetch('/api/hubs/mine')
-      .then((r) => r.json())
-      .then((data) => setHubs(data.hubs ?? []))
-      .catch(() => setHubs([]));
-  }, [open]);
+  const { data } = useGetMyHubs({ enabled: open });
+
+  const hubs = data?.hubs ?? [];
 
   // Close the sidebar after navigation
   useEffect(() => {
@@ -56,7 +51,7 @@ export function HubSwitcher() {
   }, [pathname]);
 
   const filtered = hubs.filter((h) =>
-    h.name.toLowerCase().includes(q.toLowerCase())
+    h.name.toLowerCase().includes(query.toLowerCase())
   );
 
   return (
@@ -81,8 +76,8 @@ export function HubSwitcher() {
             <div className="mt-4">
               <Input
                 placeholder="Search hubs"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
               />
             </div>
           </div>
@@ -118,7 +113,7 @@ export function HubSwitcher() {
                         ) : (
                           <div
                             className={`h-8 w-8 rounded-xl ${
-                              themeDot[hub.theme ?? 'indigo']
+                              themeDot[hub.theme ?? "indigo"]
                             }`}
                           />
                         )}

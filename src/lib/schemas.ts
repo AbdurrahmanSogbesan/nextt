@@ -4,12 +4,13 @@ import {
   VISIBILITY_CHOICE,
 } from "@prisma/client";
 import { z } from "zod";
+import { THEME_CHOICE } from "./constants";
 
 // HUB
 export const createHubSchema = z.object({
   name: z.string().min(2, "Name is required"),
   logoUrl: z.url().nullable().optional(),
-  theme: z.string().optional().or(z.literal("")),
+  theme: z.enum(THEME_CHOICE),
   visibility: z.enum(VISIBILITY_CHOICE),
   description: z.string().max(500).optional(),
 });
@@ -32,7 +33,7 @@ const MemberInput = z.object({
 export const createRosterSchema = z.object({
   hubId: z.number().int().positive(),
   name: z.string().min(2, "Title is required"),
-  description: z.string().optional(),
+  description: z.string().max(1000).optional(),
   rotationType: z.enum(ROTATION_CHOICE),
   // note: include output type of coerced values
   start: z.coerce.date<Date>(),
@@ -49,6 +50,10 @@ export const createRosterSchema = z.object({
       unit: z.coerce.number<number>().positive(),
     })
     .optional(),
+});
+
+export const editRosterSchema = createRosterSchema.omit({
+  includeAllHubMembers: true,
 });
 
 export const patchRosterSchema = z.object({

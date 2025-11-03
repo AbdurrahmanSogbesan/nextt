@@ -9,8 +9,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import DeleteHubButton from "./_delete-hub-button";
-import { PrismaHub } from "@/types/hub";
-import EditHubForm, { EditHubValues } from "./EditHubForm";
+import { EditHubForm as TEditHubForm, PrismaHub } from "@/types/hub";
+import EditHubForm from "./EditHubForm";
 import BackButton from "@/components/BackButton";
 
 async function getData(hubId: string) {
@@ -46,12 +46,12 @@ export default async function EditHubPage({
   if (!hub) notFound();
   if (role !== "ADMIN") notFound();
 
-  const initialValues: EditHubValues = {
+  const initialValues: TEditHubForm = {
     name: hub.name!,
     description: hub.description ?? "",
-    logo: hub.logo ?? null,
-    theme: (hub.theme as EditHubValues["theme"]) || "indigo",
-    visibility: hub.visibility as EditHubValues["visibility"],
+    logoUrl: hub.logo ?? null,
+    theme: (hub.theme as TEditHubForm["theme"]) || "indigo",
+    visibility: hub.visibility as TEditHubForm["visibility"],
   };
 
   return (

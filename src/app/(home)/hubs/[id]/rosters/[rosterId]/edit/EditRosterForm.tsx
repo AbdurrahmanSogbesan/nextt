@@ -1,8 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { SubmitHandler, useForm } from "react-hook-form";
-import { z } from "zod";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -30,47 +29,10 @@ import {
 
 import { DatePicker } from "@/components/DatePicker";
 import { subDays } from "date-fns";
-import { ROTATION_CHOICE, ROTATION_TYPE, STATUS_CHOICE } from "@prisma/client";
-
-const rotationChoiceLabels: Record<ROTATION_CHOICE, string> = {
-  DAILY: "Daily",
-  WEEKLY: "Weekly",
-  MONTHLY: "Monthly",
-  ANNUALLY: "Annually",
-  CUSTOM: "Custom",
-};
-
-const rotationTypeLabels: Record<ROTATION_TYPE, string> = {
-  DAILY: "Daily",
-  WEEKLY: "Weekly",
-  ANNUALLY: "Annually",
-};
-
-const statusLabels: Record<STATUS_CHOICE, string> = {
-  ONGOING: "Ongoing",
-  PENDING: "Pending",
-  COMPLETE: "Complete",
-};
-
-const schema = z.object({
-  hubId: z.number(),
-  name: z.string().min(2, "Name is required"),
-  description: z.string().max(1000).optional().or(z.literal("")),
-  rotationType: z.enum(ROTATION_CHOICE),
-  start: z.date(),
-  end: z.date(),
-  enablePushNotifications: z.boolean(),
-  enableEmailNotifications: z.boolean(),
-  isPrivate: z.boolean(),
-  rotationOption: z
-    .object({
-      rotation: z.enum(ROTATION_TYPE),
-      unit: z.coerce.number<number>().min(1),
-    })
-    .optional(),
-  status: z.enum(STATUS_CHOICE),
-});
-type EditRosterValues = z.infer<typeof schema>;
+import type { EditRosterForm } from "@/types/roster";
+import { editRosterSchema } from "@/lib/schemas";
+import { rotationChoiceLabels, rotationTypeLabels } from "@/lib/constants";
+import { useUpdateRoster } from "@/hooks/roster";
 
 export default function EditRosterForm({
   hubId,
@@ -79,12 +41,12 @@ export default function EditRosterForm({
 }: {
   hubId: number;
   rosterId: number;
-  initialValues: EditRosterValues;
+  initialValues: EditRosterForm;
 }) {
   const router = useRouter();
 
-  const form = useForm<EditRosterValues>({
-    resolver: zodResolver(schema),
+  const form = useForm<EditRosterForm>({
+    resolver: zodResolver(editRosterSchema),
     defaultValues: {
       ...initialValues,
       start: initialValues.start ? new Date(initialValues.start) : new Date(),
@@ -94,6 +56,11 @@ export default function EditRosterForm({
         : {}),
     },
   });
+
+  const { mutateAsync: updateRoster, isPending: isUpdatingRoster } =
+    useUpdateRoster(String(rosterId), () => {
+      router.push(`/hubs/${hubId}/rosters/${rosterId}`);
+    });
 
   const {
     watch,
@@ -111,30 +78,14 @@ export default function EditRosterForm({
     (!isCustomRotation ||
       (!!watch("rotationOption.rotation") && !!watch("rotationOption.unit")));
 
-  async function onSubmit(values: EditRosterValues) {
-    const payload: EditRosterValues = {
+  async function onSubmit(values: EditRosterForm) {
+    const payload = {
       ...values,
       rotationOption:
         values.rotationType === "CUSTOM" ? values.rotationOption : undefined,
     };
 
-    const r = await fetch(`/api/rosters/${rosterId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...payload,
-        start: payload.start.toISOString(),
-        end: payload.end.toISOString(),
-      }),
-    });
-
-    if (!r.ok) {
-      const t = await r.text();
-      alert(t || "Update failed");
-      return;
-    }
-
-    window.location.href = `/hubs/${hubId}/rosters/${rosterId}`;
+    await updateRoster(payload);
   }
 
   return (
@@ -148,12 +99,7 @@ export default function EditRosterForm({
         </div>
 
         <Form {...form}>
-          <form
-            onSubmit={handleSubmit(
-              onSubmit as SubmitHandler<Partial<EditRosterValues>>
-            )}
-            className="space-y-8"
-          >
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
             <FormField
               control={control}
               name="name"
@@ -374,7 +320,7 @@ export default function EditRosterForm({
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={control}
                   name="status"
@@ -404,7 +350,7 @@ export default function EditRosterForm({
                     </FormItem>
                   )}
                 />
-              </div>
+              </div> */}
             </div>
 
             <CardFooter className="px-0">
@@ -418,7 +364,10 @@ export default function EditRosterForm({
                 >
                   Cancel
                 </Button>
-                <Button disabled={!isFormValid || !isDirty} type="submit">
+                <Button
+                  disabled={!isFormValid || !isDirty || isUpdatingRoster}
+                  type="submit"
+                >
                   Save changes
                 </Button>
               </div>

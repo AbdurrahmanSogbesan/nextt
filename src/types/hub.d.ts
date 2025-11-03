@@ -46,6 +46,8 @@ export type GetHubMembersResponse = {
 
 export type CreateHubForm = z.infer<typeof createHubSchema>;
 
+export type EditHubForm = z.infer<typeof createHubSchema>;
+
 export type UpdateHubMemberRoleParams = z.infer<
   typeof updateHubMemberRoleSchema
 >;
@@ -66,4 +68,8 @@ export type RemoveHubMemberParams = {
 
 export type RemoveHubMemberResponse = {
   membership: HubMembership;
+};
+
+export type GetMyHubsResponse = {
+  hubs: Pick<PrismaHub, "id" | "name" | "logo" | "theme" | "visibility">[];
 };

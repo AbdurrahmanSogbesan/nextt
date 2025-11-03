@@ -1,7 +1,6 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,21 +11,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
+import { useDeleteHub } from "@/hooks/hub";
+import { useRouter } from "next/navigation";
 
 export default function DeleteHubButton({ hubId }: { hubId: string }) {
-  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  async function onDelete() {
-    setLoading(true);
-    const res = await fetch(`/api/hubs/${hubId}`, { method: 'DELETE' });
-    setLoading(false);
-    if (!res.ok) {
-      const t = await res.text();
-      alert('Delete failed: ' + t);
-      return;
-    }
-    window.location.href = '/dashboard';
+  const { mutate: deleteHub, isPending } = useDeleteHub(() => {
+    router.push("/dashboard");
+  });
+
+  function onDelete() {
+    deleteHub(hubId);
   }
 
   return (
@@ -45,8 +42,8 @@ export default function DeleteHubButton({ hubId }: { hubId: string }) {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onDelete} disabled={loading}>
-            {loading ? 'Deleting' : 'Delete'}
+          <AlertDialogAction onClick={onDelete} disabled={isPending}>
+            {isPending ? "Deleting" : "Delete"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
