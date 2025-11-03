@@ -1,8 +1,8 @@
-import { currentUser, User } from '@clerk/nextjs/server';
-import { notFound, redirect } from 'next/navigation';
-import prisma from '@/lib/prisma';
-import EditRosterForm from './EditRosterForm';
-import BackButton from '../../../../../../../components/BackButton';
+import { currentUser, User } from "@clerk/nextjs/server";
+import { notFound, redirect } from "next/navigation";
+import prisma from "@/lib/prisma";
+import EditRosterForm from "./EditRosterForm";
+import BackButton from "@/components/BackButton";
 
 // Use your exact helper signature and behavior
 async function getMeAndRole(hubId: string, me: User | null) {
@@ -13,7 +13,7 @@ async function getMeAndRole(hubId: string, me: User | null) {
   });
 
   if (!hub) return { me, hub: null, role: null };
-  const role = hub.members![0]?.isAdmin ? 'ADMIN' : 'MEMBER';
+  const role = hub.members![0]?.isAdmin ? "ADMIN" : "MEMBER";
   return { me, hub, role };
 }
 
@@ -24,11 +24,11 @@ export default async function EditRosterPage({
 }) {
   const { id, rosterId } = await params;
   const me = await currentUser();
-  if (!me) redirect('/sign-in');
+  if (!me) redirect("/sign-in");
 
   const { hub, role } = await getMeAndRole(id, me);
   if (!hub) notFound();
-  if (role !== 'ADMIN') notFound();
+  if (role !== "ADMIN") notFound();
 
   const roster = await prisma.roster.findUnique({
     where: { id: Number(rosterId) },
@@ -38,18 +38,18 @@ export default async function EditRosterPage({
 
   const initialValues = {
     hubId: Number(id),
-    name: roster.name || '',
-    description: roster.description || '',
-    rotationType: roster.rotationType || 'DAILY',
+    name: roster.name || "",
+    description: roster.description || "",
+    rotationType: roster.rotationType || "DAILY",
     start: roster.start,
     end: roster.end,
     enablePushNotifications: !!roster.enablePushNotifications,
     enableEmailNotifications: !!roster.enableEmailNotifications,
     isPrivate: !!roster.isPrivate,
     rotationOption:
-      roster.rotationType === 'CUSTOM'
+      roster.rotationType === "CUSTOM"
         ? {
-            rotation: roster.rotationOption?.rotation || 'DAILY',
+            rotation: roster.rotationOption?.rotation || "DAILY",
             unit: roster.rotationOption?.unit || 1,
           }
         : undefined,

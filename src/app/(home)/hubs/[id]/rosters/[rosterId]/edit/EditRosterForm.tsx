@@ -1,15 +1,14 @@
-// app/hubs/[id]/rosters/[rosterId]/edit/EditRosterForm.tsx
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { Control, SubmitHandler, useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from "next/navigation";
+import { SubmitHandler, useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormField,
@@ -17,46 +16,46 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
-} from '@/components/ui/form';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Switch } from '@/components/ui/switch';
+} from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 
-import { DatePicker } from '@/components/DatePicker';
-import { subDays } from 'date-fns';
-import { ROTATION_CHOICE, ROTATION_TYPE, STATUS_CHOICE } from '@prisma/client';
+import { DatePicker } from "@/components/DatePicker";
+import { subDays } from "date-fns";
+import { ROTATION_CHOICE, ROTATION_TYPE, STATUS_CHOICE } from "@prisma/client";
 
 const rotationChoiceLabels: Record<ROTATION_CHOICE, string> = {
-  DAILY: 'Daily',
-  WEEKLY: 'Weekly',
-  MONTHLY: 'Monthly',
-  ANNUALLY: 'Annually',
-  CUSTOM: 'Custom',
+  DAILY: "Daily",
+  WEEKLY: "Weekly",
+  MONTHLY: "Monthly",
+  ANNUALLY: "Annually",
+  CUSTOM: "Custom",
 };
 
 const rotationTypeLabels: Record<ROTATION_TYPE, string> = {
-  DAILY: 'Daily',
-  WEEKLY: 'Weekly',
-  ANNUALLY: 'Annually',
+  DAILY: "Daily",
+  WEEKLY: "Weekly",
+  ANNUALLY: "Annually",
 };
 
 const statusLabels: Record<STATUS_CHOICE, string> = {
-  ONGOING: 'Ongoing',
-  PENDING: 'Pending',
-  COMPLETE: 'Complete',
+  ONGOING: "Ongoing",
+  PENDING: "Pending",
+  COMPLETE: "Complete",
 };
 
 const schema = z.object({
   hubId: z.number(),
-  name: z.string().min(2, 'Name is required'),
-  description: z.string().max(1000).optional().or(z.literal('')),
+  name: z.string().min(2, "Name is required"),
+  description: z.string().max(1000).optional().or(z.literal("")),
   rotationType: z.enum(ROTATION_CHOICE),
   start: z.date(),
   end: z.date(),
@@ -66,7 +65,7 @@ const schema = z.object({
   rotationOption: z
     .object({
       rotation: z.enum(ROTATION_TYPE),
-      unit: z.coerce.number().min(1),
+      unit: z.coerce.number<number>().min(1),
     })
     .optional(),
   status: z.enum(STATUS_CHOICE),
@@ -85,13 +84,12 @@ export default function EditRosterForm({
   const router = useRouter();
 
   const form = useForm<EditRosterValues>({
-    // @ts-expect-error resolver type issue
     resolver: zodResolver(schema),
     defaultValues: {
       ...initialValues,
       start: initialValues.start ? new Date(initialValues.start) : new Date(),
       end: initialValues.end ? new Date(initialValues.end) : new Date(),
-      ...(initialValues.rotationType !== 'CUSTOM'
+      ...(initialValues.rotationType !== "CUSTOM"
         ? { rotationOption: undefined }
         : {}),
     },
@@ -99,33 +97,30 @@ export default function EditRosterForm({
 
   const {
     watch,
-    formState: { isValid },
+    formState: { isValid, isDirty },
     handleSubmit,
-    control: controlInit,
+    control,
   } = form;
 
-  const control = controlInit as Control<Partial<EditRosterValues>>;
-
-  const rotationType = watch('rotationType');
-  const isCustomRotation = rotationType === 'CUSTOM';
-  const start = watch('start');
+  const rotationType = watch("rotationType");
+  const isCustomRotation = rotationType === "CUSTOM";
+  const start = watch("start");
 
   const isFormValid =
     isValid &&
     (!isCustomRotation ||
-      // @ts-expect-error boolean conversion
-      (!!watch('rotationOption?.rotation') && !!watch('rotationOption?.unit')));
+      (!!watch("rotationOption.rotation") && !!watch("rotationOption.unit")));
 
   async function onSubmit(values: EditRosterValues) {
     const payload: EditRosterValues = {
       ...values,
       rotationOption:
-        values.rotationType === 'CUSTOM' ? values.rotationOption : undefined,
+        values.rotationType === "CUSTOM" ? values.rotationOption : undefined,
     };
 
     const r = await fetch(`/api/rosters/${rosterId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...payload,
         start: payload.start.toISOString(),
@@ -135,7 +130,7 @@ export default function EditRosterForm({
 
     if (!r.ok) {
       const t = await r.text();
-      alert(t || 'Update failed');
+      alert(t || "Update failed");
       return;
     }
 
@@ -199,9 +194,9 @@ export default function EditRosterForm({
                   <FormLabel>Visibility</FormLabel>
                   <FormControl>
                     <RadioGroup
-                      value={field.value ? 'PRIVATE' : 'PUBLIC'}
+                      value={field.value ? "PRIVATE" : "PUBLIC"}
                       onValueChange={(value) =>
-                        field.onChange(value === 'PRIVATE')
+                        field.onChange(value === "PRIVATE")
                       }
                       className="flex items-center gap-3"
                     >
@@ -423,7 +418,7 @@ export default function EditRosterForm({
                 >
                   Cancel
                 </Button>
-                <Button disabled={!isFormValid} type="submit">
+                <Button disabled={!isFormValid || !isDirty} type="submit">
                   Save changes
                 </Button>
               </div>

@@ -1,5 +1,5 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { apiDelete, apiGet, apiPatch, apiPost } from '@/lib/api';
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api";
 import {
   AddRosterMemberParams,
   AddRosterMemberResponse,
@@ -9,80 +9,96 @@ import {
   RemoveRosterMemberResponse,
   UpdateRosterMemberRoleResponse,
   UpdateRosterMemberRoleParams,
-} from '@/types/roster';
-import { toast } from 'sonner';
-import z from 'zod';
-import { createRosterCommentSchema } from '@/lib/schemas';
+} from "@/types/roster";
+import { toast } from "sonner";
+import z from "zod";
+import { createRosterCommentSchema } from "@/lib/schemas";
 
 export function useGetRoster(rosterId: string) {
   return useQuery({
-    queryKey: ['getRoster', rosterId],
+    queryKey: ["getRoster", rosterId],
     queryFn: () => apiGet<GetRosterResponse>(`/api/rosters/${rosterId}`),
   });
 }
 
 export function useStartRoster(rosterId: string) {
   return useMutation({
-    mutationKey: ['startRoster', rosterId],
+    mutationKey: ["startRoster", rosterId],
     mutationFn: async () => {
       await apiPost(`/api/rosters/${rosterId}/start`);
     },
     onSuccess: (data, variables, onMutateResult, context) => {
-      toast.success('Roster started successfully');
-      context.client.invalidateQueries({ queryKey: ['getRoster', rosterId] });
+      toast.success("Roster started successfully");
+      context.client.invalidateQueries({ queryKey: ["getRoster", rosterId] });
+      context.client.invalidateQueries({
+        queryKey: ["getNotifications"],
+        exact: false,
+      });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to start roster');
+      toast.error(error.message || "Failed to start roster");
     },
   });
 }
 
-export function useCompleteTurn(rosterId: string, onSuccess?: () => void) {
+export function useCompleteTurn(onSuccess?: () => void) {
   return useMutation({
-    mutationKey: ['completeTurn', rosterId],
-    mutationFn: async (turnId: number) => {
+    mutationKey: ["completeTurn"],
+    mutationFn: async ({
+      rosterId,
+      turnId,
+    }: {
+      rosterId: number;
+      turnId: number;
+    }) => {
       await apiPost(`/api/rosters/${rosterId}/complete-turn`, { turnId });
     },
     onSuccess: (data, variables, onMutateResult, context) => {
-      toast.success('Turn completed successfully');
-      context.client.invalidateQueries({ queryKey: ['getRoster', rosterId] });
+      toast.success("Turn completed successfully");
+      context.client.invalidateQueries({
+        queryKey: ["getRoster", variables.rosterId],
+      });
+      context.client.invalidateQueries({
+        queryKey: ["getNotifications"],
+        exact: false,
+      });
       onSuccess?.();
     },
     onError: (error: Error) => {
-      console.error('Error completing turn:', error);
-      toast.error(error.message || 'Failed to complete turn');
+      console.error("Error completing turn:", error);
+      toast.error(error.message || "Failed to complete turn");
     },
   });
 }
 
 export function useAddComment(rosterId: string) {
   return useMutation({
-    mutationKey: ['addComment', rosterId],
+    mutationKey: ["addComment", rosterId],
     mutationFn: async (data: z.infer<typeof createRosterCommentSchema>) => {
       await apiPost(`/api/rosters/${rosterId}/comment`, data);
     },
     onSuccess: (data, variables, onMutateResult, context) => {
-      toast.success('Comment added successfully');
-      context.client.invalidateQueries({ queryKey: ['getRoster', rosterId] });
+      toast.success("Comment added successfully");
+      context.client.invalidateQueries({ queryKey: ["getRoster", rosterId] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to add comment');
+      toast.error(error.message || "Failed to add comment");
     },
   });
 }
 
 export function useCreateRoster(onSuccess: (id: string) => void) {
   return useMutation({
-    mutationKey: ['createRoster'],
+    mutationKey: ["createRoster"],
     mutationFn: async (data: CreateRosterForm) => {
-      const { id } = await apiPost<{ id: string }>('/api/rosters', data);
+      const { id } = await apiPost<{ id: string }>("/api/rosters", data);
       return id;
     },
     onSuccess,
     onError: (error) => {
-      console.error('Error creating roster:', error);
-      toast.error('Failed to create roster', {
-        description: 'Please try again',
+      console.error("Error creating roster:", error);
+      toast.error("Failed to create roster", {
+        description: "Please try again",
       });
     },
   });
@@ -92,8 +108,8 @@ export function useUpdateRoster(rosterId: string, onSuccess?: () => void) {
   return useMutation({
     mutationFn: async (payload: Partial<CreateRosterForm>) => {
       const r = await fetch(`/api/rosters/${rosterId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       if (!r.ok) throw new Error(await r.text());
@@ -101,15 +117,15 @@ export function useUpdateRoster(rosterId: string, onSuccess?: () => void) {
     },
     onSuccess,
     onError: (error: Error) => {
-      console.error('Error updating roster:', error);
-      toast.error(error.message || 'Failed to update roster');
+      console.error("Error updating roster:", error);
+      toast.error(error.message || "Failed to update roster");
     },
   });
 }
 
 export function useAddRosterMember(rosterId: string, onSuccess: () => void) {
   return useMutation({
-    mutationKey: ['addRosterMember', rosterId],
+    mutationKey: ["addRosterMember", rosterId],
     mutationFn: async (data: AddRosterMemberParams) => {
       const response = await apiPost<AddRosterMemberResponse>(
         `/api/rosters/${rosterId}/members`,
@@ -118,20 +134,24 @@ export function useAddRosterMember(rosterId: string, onSuccess: () => void) {
       return response.member;
     },
     onSuccess: (data, variables, onMutateResult, context) => {
-      context.client.invalidateQueries({ queryKey: ['getRoster', rosterId] });
+      context.client.invalidateQueries({ queryKey: ["getRoster", rosterId] });
+      context.client.invalidateQueries({
+        queryKey: ["getNotifications"],
+        exact: false,
+      });
 
-      toast.success('Member added successfully');
+      toast.success("Member added successfully");
       onSuccess();
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to add member');
+      toast.error(error.message || "Failed to add member");
     },
   });
 }
 
 export function useGetRosterMembers(rosterId: string) {
   return useQuery({
-    queryKey: ['rosterMembers', rosterId],
+    queryKey: ["rosterMembers", rosterId],
     queryFn: () =>
       apiGet<GetRosterMembersResponse>(`/api/rosters/${rosterId}/members`),
   });
@@ -142,7 +162,7 @@ export function useRemoveRosterMember(
   onSuccess?: () => void
 ) {
   return useMutation({
-    mutationKey: ['removeRosterMember', rosterId],
+    mutationKey: ["removeRosterMember", rosterId],
     mutationFn: async ({ rosterUserId }: { rosterUserId: string }) => {
       const response = await apiDelete<RemoveRosterMemberResponse>(
         `/api/rosters/${rosterId}/members`,
@@ -154,15 +174,15 @@ export function useRemoveRosterMember(
       return response.member;
     },
     onSuccess: (data, variables, onMutateResult, context) => {
-      toast.success('Member removed successfully');
+      toast.success("Member removed successfully");
       context.client.invalidateQueries({
-        queryKey: ['rosterMembers', rosterId],
+        queryKey: ["rosterMembers", rosterId],
       });
-      context.client.invalidateQueries({ queryKey: ['getRoster', rosterId] });
+      context.client.invalidateQueries({ queryKey: ["getRoster", rosterId] });
       onSuccess?.();
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to remove member');
+      toast.error(error.message || "Failed to remove member");
     },
   });
 }
@@ -172,7 +192,7 @@ export function useUpdateRosterMemberRole(
   onSuccess?: () => void
 ) {
   return useMutation({
-    mutationKey: ['updateRosterMemberRole', rosterId],
+    mutationKey: ["updateRosterMemberRole", rosterId],
     mutationFn: async (params: UpdateRosterMemberRoleParams) => {
       const resp = await apiPatch<UpdateRosterMemberRoleResponse>(
         `/api/rosters/${rosterId}/members`,
@@ -182,15 +202,15 @@ export function useUpdateRosterMemberRole(
       return resp.member;
     },
     onSuccess: (data, variables, onMutateResult, context) => {
-      toast.success('Member role updated successfully');
+      toast.success("Member role updated successfully");
       context.client.invalidateQueries({
-        queryKey: ['rosterMembers', rosterId],
+        queryKey: ["rosterMembers", rosterId],
       });
-      context.client.invalidateQueries({ queryKey: ['getRoster', rosterId] });
+      context.client.invalidateQueries({ queryKey: ["getRoster", rosterId] });
       onSuccess?.();
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update member role');
+      toast.error(error.message || "Failed to update member role");
     },
   });
 }

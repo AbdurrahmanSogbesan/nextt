@@ -1,38 +1,41 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { UserButton, useUser } from '@clerk/nextjs';
-import { Bell } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useParams } from 'next/navigation';
-import { HubSwitcher } from './HubSwitcher';
+import { UserButton, useUser } from "@clerk/nextjs";
+import { Bell } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { HubSwitcher } from "./HubSwitcher";
 
 export default function Header() {
   const { user } = useUser();
-  const fullName = user?.fullName || 'Account';
-  const email = user?.primaryEmailAddress?.emailAddress ?? '';
+  const fullName = user?.fullName || "Account";
+  const email = user?.primaryEmailAddress?.emailAddress ?? "";
 
-  const { id: hubId } = useParams<{ id: string }>();
-  // const router = useRouter();
+  const router = useRouter();
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/70 backdrop-blur">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4">
         {/* Left: brand */}
         {/* todo: configure link  - should take user to current hub dashboard. Needs to consider when user has no hubs. otherwise could use hub create form? */}
-        <Link href={`/hubs/${hubId}`} className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <div className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-tr from-indigo-500 to-sky-400 text-white shadow-sm">
             <span className="text-sm font-bold">N</span>
           </div>
           <span className="text-lg font-semibold tracking-tight">Nextt</span>
-        </Link>
+        </div>
 
         {/* Right: actions */}
         <div className="flex items-center gap-3">
           {/* <Button variant="ghost" size="icon" aria-label="Calendar">
             <CalendarDays className="h-5 w-5" />
           </Button> */}
-          <Button variant="ghost" size="icon" aria-label="Notifications">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Notifications"
+            onClick={() => router.push("/notifications")}
+          >
             <Bell className="h-5 w-5" />
           </Button>
 
@@ -40,7 +43,7 @@ export default function Header() {
             <UserButton
               appearance={{
                 elements: {
-                  userPreview: 'hidden',
+                  userPreview: "hidden",
                 },
               }}
             />

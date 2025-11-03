@@ -52,7 +52,7 @@ export default function RosterDashboard() {
   const { data, isLoading } = useGetRoster(rosterId);
 
   const startRoster = useStartRoster(rosterId);
-  const completeTurn = useCompleteTurn(rosterId);
+  const completeTurn = useCompleteTurn();
   const addComment = useAddComment(rosterId);
 
   const { roster, userMap: userMapRecord } = data || {};
@@ -129,7 +129,10 @@ export default function RosterDashboard() {
               const currentTurnId = roster.turns.find(
                 (t) => t.rosterMembershipRosterUserId === roster.currentTurnId
               )?.id as number;
-              completeTurn.mutate(currentTurnId);
+              completeTurn.mutate({
+                rosterId: parseInt(rosterId),
+                turnId: currentTurnId,
+              });
             }}
             theme={theme}
             isCompleting={completeTurn.isPending}

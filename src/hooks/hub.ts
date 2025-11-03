@@ -116,8 +116,12 @@ export function useCreateInvite(onSuccess: () => void) {
       );
       return response.invite;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, onMutateResult, context) => {
       // todo: invalidate get invites query
+      context.client.invalidateQueries({
+        queryKey: ["getNotifications"],
+        exact: false,
+      });
       toast.success("Invite created successfully");
       onSuccess();
     },

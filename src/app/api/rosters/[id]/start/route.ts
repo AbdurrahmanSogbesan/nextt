@@ -22,6 +22,7 @@ export async function POST(
       where: { id: parseInt(id) },
       select: {
         id: true,
+        hubId: true,
         rotationType: true,
         rotationOption: true,
         nextDate: true,
@@ -116,6 +117,7 @@ export async function POST(
           users: [firstMember.rosterUserId],
           body: "Your turn has started",
           roster: { connect: { id: roster.id } },
+          hub: { connect: { id: roster.hubId } },
           turn: { connect: { id: turn.id } },
         },
       });
@@ -126,6 +128,7 @@ export async function POST(
           users: roster.members.map((m) => m.rosterUserId),
           body: "Roster has started",
           roster: { connect: { id: roster.id } },
+          hub: { connect: { id: roster.hubId } },
         },
       });
     });
