@@ -162,7 +162,7 @@ export function useUpdateHub(hubId: string, onSuccess: () => void) {
       return response.id;
     },
     onSuccess: (data, variables, onMutateResult, context) => {
-      context.client.invalidateQueries({ queryKey: ["getHub", hubId] });
+      context.client.refetchQueries({ queryKey: ["getHub", hubId] });
       toast.success("Hub updated successfully");
       onSuccess();
     },
